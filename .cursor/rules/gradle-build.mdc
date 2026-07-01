@@ -1,0 +1,90 @@
+---
+description: Gradle, convention plugins, зависимости модулей
+globs: "**/*.gradle.kts,build-logic/**/*.kt,gradle/**"
+alwaysApply: false
+---
+
+# Gradle и сборка
+
+## Convention plugins (`build-logic`)
+
+| Plugin ID | Применять к | Что даёт |
+|-----------|-------------|----------|
+| `tmdb.kmp.library` | `core:*`, `data:*:api` | KMP + android + ios + desktop targets |
+| `tmdb.kmp.data.impl` | `data:*:impl` | + ktor, serialization |
+| `tmdb.kmp.feature.api` | `feature:*:api` | + decompose |
+| `tmdb.kmp.feature.impl` | `feature:*:impl` | + compose, mvikotlin, decompose |
+| `tmdb.kmp.app` | `app` | Application plugin, все impl |
+
+## Правила
+
+- Новый модуль: добавить в `settings.gradle.kts`, применить правильный convention plugin.
+- Версии — **только** через `gradle/libs.versions.toml` (version catalog).
+- Не дублировать `compileSdk`, `minSdk`, targets — они в convention plugins.
+- Targets: `android`, `iosArm64`, `iosSimulatorArm64`, `jvm("desktop")`.
+- API key: `local.properties` → `TMDB_API_KEY`, читается в `data:config:impl`.
+
+## Именование модулей
+
+```kotlin
+// settings.gradle.kts
+include(":feature:discover:api")
+include(":feature:discover:impl")
+include(":data:tmdb:api")
+include(":data:tmdb:impl")
+```
+
+## Зависимости модулей
+
+```kotlin
+// feature-impl — пример
+dependencies {
+    commonMainImplementation(projects.feature.discover.api)
+    commonMainImplementation(projects.auth.api)
+    commonMainImplementation(projects.data.tmdb.api)
+    commonMainImplementation(projects.core.ui)
+}
+// НИКОГДА: projects.feature.discover.impl, projects.auth.impl
+```
+
+## app — единственный сборщик impl
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    commonMainImplementation(projects.auth.impl)
+    commonMainImplementation(projects.data.storage.impl)
+    commonMainImplementation(projects.data.config.impl)
+    commonMainImplementation(projects.data.tmdb.impl)
+    commonMainImplementation(projects.feature.login.impl)
+    commonMainImplementation(projects.feature.main.impl)
+    commonMainImplementation(projects.feature.discover.impl)
+    commonMainImplementation(projects.feature.details.impl)
+    commonMainImplementation(projects.feature.search.impl)
+}
+```
+
+## Koin — порядок модулей
+
+```kotlin
+modules(
+    coreModule,
+    configImplModule,
+    storageImplModule,
+    authImplModule,
+    tmdbImplModule,
+    discoverFeatureModule,
+    detailsFeatureModule,
+    searchFeatureModule,
+    loginFeatureModule,
+    mainFeatureModule,
+    appModule,
+)
+```
+
+## Новый модуль — чеклист
+
+1. `settings.gradle.kts` → `include(":layer:name:api")` + `impl`
+2. `build.gradle.kts` → convention plugin
+3. Зависимости только на api-модули (кроме app)
+4. Koin module в impl, регистрация в app

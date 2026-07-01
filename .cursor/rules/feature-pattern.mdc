@@ -1,0 +1,65 @@
+---
+description: Паттерн feature-модулей — Decompose + MVIKotlin + Compose
+globs: feature/**/*.kt,app/**/*.kt
+alwaysApply: false
+---
+
+# Паттерн feature-модуля
+
+Каждый экран следует трёхслойному паттерну:
+
+| Слой | Где | Роль |
+|------|-----|------|
+| `*Component` | `*:api` (интерфейс) + `*:impl` (реализация) | Decompose: `Value<Model>`, `onIntent()`, навигация по Label |
+| `*Store` | `*:impl` | MVIKotlin: Intent → State → Label |
+| `*Content` | `*:impl` | `@Composable` UI: подписка на state, вызов intents |
+
+## Контракты в *:api
+
+```kotlin
+// feature:discover:api
+interface DiscoverComponent {
+    val model: Value<DiscoverModel>
+    fun onIntent(intent: DiscoverIntent)
+}
+
+sealed interface DiscoverIntent { ... }
+data class DiscoverModel(...)
+```
+
+## Реализация в *:impl
+
+- `Default*Component` implements `*Component`, `ComponentContext by componentContext`
+- `*Store` / `*StoreFactory` — MVIKotlin executor
+- `*Content` — чистый Compose без бизнес-логики
+- `*FeatureModule` — Koin module с factory для Component
+
+## Поток данных (пример discover)
+
+```
+DiscoverContent (Compose)
+  → DiscoverComponent.onIntent
+  → DiscoverStore
+  → UseCase / Repository (только через api-интерфейсы)
+```
+
+## Запрещено
+
+- Импортировать `*:impl` из другого feature-модуля.
+- Класть бизнес-логику в `@Composable`.
+- Обращаться к `SessionRepository` напрямую из UI — только через Component/Store.
+- Добавлять навигацию между фичами внутри feature-impl (навигация — в main или root).
+- Блокировать browse-экраны для Guest — каталог доступен без login.
+
+## Discover MVP (первая фича)
+
+- Intent: `Load`, `Refresh`, `LoadMore`, `OnMovieClick`
+- State: `movies`, `isLoading`, `isRefreshing`, `error`, `page`, `endReached`, `sessionState`
+- Label: `NavigateToDetails(movieId)`, `ShowError(message)`
+- TMDB: `GET /movie/popular`, `language=ru-RU`
+- UI: Loading / Error / Empty / Content
+
+## Account-фичи и Guest
+
+- State содержит `sessionState` (или производное `isAuthenticated`) для условного UI.
+- Account intent при Guest → Label `NavigateToLogin`, не вызов TMDB account API.

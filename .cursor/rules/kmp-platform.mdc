@@ -1,0 +1,45 @@
+---
+description: KMP — commonMain, expect/actual, платформенный код
+globs: "**/commonMain/**/*.kt,**/androidMain/**/*.kt,**/iosMain/**/*.kt,**/desktopMain/**/*.kt,core/**/*.kt,data/**/*.kt"
+alwaysApply: false
+---
+
+# KMP соглашения
+
+## Распределение кода
+
+- **commonMain** — бизнес-логика, UI (Compose), навигация, сетевые контракты.
+- **androidMain / iosMain / desktopMain** — только platform-specific: WebView/Custom Tabs, storage, browser, HttpClient engine.
+- `expect`/`actual` — только когда API реально различается между платформами.
+
+## Запрещено в commonMain
+
+- `import android.*`, `import androidx.*` (кроме androidx через CMP, если уже настроено)
+- `import platform.*` (iOS)
+- `import java.awt.*`, `import java.net.HttpServer` (desktop-only API)
+
+## core-модули
+
+| Модуль | Содержимое |
+|--------|------------|
+| `core:common` | `AppResult`, extensions, `DispatcherProvider` |
+| `core:ui` | `TmdbTheme`, design system, общие composables |
+| `core:navigation` | Decompose utils, serializers |
+| `core:network` | `HttpClientFactory` (без TMDB-специфики) |
+
+## data-модули
+
+- `*:api` — интерфейсы репозиториев, DTO (без Ktor).
+- `*:impl` — Ktor client, mappers, реализации репозиториев.
+- `data:config:api` — `TmdbConfig` (api key, base url).
+- `data:tmdb:api` — `MovieRepository`, domain models, DTO.
+
+## Пакеты
+
+Базовый пакет: `com.tmdb.kmp.<layer>.<module>` — например `com.tmdb.kmp.feature.discover.api`.
+
+## Тесты
+
+- Логику — в `commonTest`.
+- Platform-specific — только в `androidUnitTest` / `iosTest` / `desktopTest` при необходимости.
+- Для Store/SessionManager использовать fakes из api-модулей.
