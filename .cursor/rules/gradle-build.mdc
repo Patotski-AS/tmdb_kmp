@@ -10,8 +10,10 @@ alwaysApply: false
 
 | Plugin ID | Применять к | Что даёт |
 |-----------|-------------|----------|
-| `tmdb.kmp.library` | `core:*`, `data:*:api` | KMP + android + ios + desktop targets |
-| `tmdb.kmp.data.impl` | `data:*:impl` | + ktor, serialization |
+| `tmdb.kmp.api` | `core:common`, `*:api` (минимальный) | KMP + coroutines |
+| `tmdb.kmp.library` | `core:navigation`, `core:network`, `auth:impl`, `data:storage:impl`, `data:config:impl` | KMP + serialization |
+| `tmdb.cmp.library` | `core:ui` | + Compose Multiplatform |
+| `tmdb.kmp.data.impl` | `data:tmdb:impl` | + ktor, serialization |
 | `tmdb.kmp.feature.api` | `feature:*:api` | + decompose |
 | `tmdb.kmp.feature.impl` | `feature:*:impl` | + compose, mvikotlin, decompose |
 | `tmdb.kmp.app` | `app` | Application plugin, все impl |
