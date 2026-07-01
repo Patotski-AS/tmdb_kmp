@@ -16,6 +16,7 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.feature.details.impl.DetailsContent
 import pas.tmdb.feature.discover.impl.DiscoverContent
 import pas.tmdb.feature.main.api.MainComponent
+import pas.tmdb.feature.search.impl.SearchContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,9 @@ fun MainContent(
             )
         }
 
-        is MainComponent.Child.Discover -> {
+        is MainComponent.Child.Discover,
+        is MainComponent.Child.Search,
+        -> {
             Scaffold(
                 modifier = modifier,
                 topBar = {
@@ -49,6 +52,12 @@ fun MainContent(
                             icon = { Text("★") },
                             label = { Text("Главная") },
                         )
+                        NavigationBarItem(
+                            selected = selectedTab == MainComponent.Tab.Search,
+                            onClick = { component.onTabSelected(MainComponent.Tab.Search) },
+                            icon = { Text("🔍") },
+                            label = { Text("Поиск") },
+                        )
                     }
                 },
             ) { padding ->
@@ -58,6 +67,7 @@ fun MainContent(
                 ) { child ->
                     when (val instance = child.instance) {
                         is MainComponent.Child.Discover -> DiscoverContent(component = instance.component)
+                        is MainComponent.Child.Search -> SearchContent(component = instance.component)
                         is MainComponent.Child.Details -> Unit
                     }
                 }

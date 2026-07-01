@@ -7,6 +7,7 @@ kotlin {
         commonMain.dependencies {
             implementation(projects.feature.discover.api)
             implementation(projects.feature.details.api)
+            implementation(projects.feature.search.api)
         }
     }
 }

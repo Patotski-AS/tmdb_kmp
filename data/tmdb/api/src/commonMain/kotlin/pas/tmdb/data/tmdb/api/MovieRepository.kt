@@ -7,6 +7,7 @@ import pas.tmdb.data.tmdb.api.model.PagedMovies
 
 interface MovieRepository {
     suspend fun getPopularMovies(page: Int = 1): AppResult<PagedMovies>
+    suspend fun searchMovies(query: String, page: Int = 1): AppResult<PagedMovies>
     suspend fun getMovieDetails(movieId: Int): AppResult<MovieDetails>
     suspend fun getImageConfiguration(): AppResult<ImageConfiguration>
 }

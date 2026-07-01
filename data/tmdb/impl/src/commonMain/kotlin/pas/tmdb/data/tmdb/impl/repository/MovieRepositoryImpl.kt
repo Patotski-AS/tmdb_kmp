@@ -21,6 +21,12 @@ internal class MovieRepositoryImpl(
             apiClient.getPopularMovies(page).toDomain(imageConfiguration)
         }
 
+    override suspend fun searchMovies(query: String, page: Int): AppResult<PagedMovies> =
+        runCatchingAppResult {
+            val imageConfiguration = requireImageConfiguration()
+            apiClient.searchMovies(query, page).toDomain(imageConfiguration)
+        }
+
     override suspend fun getMovieDetails(movieId: Int): AppResult<MovieDetails> =
         runCatchingAppResult {
             val imageConfiguration = requireImageConfiguration()

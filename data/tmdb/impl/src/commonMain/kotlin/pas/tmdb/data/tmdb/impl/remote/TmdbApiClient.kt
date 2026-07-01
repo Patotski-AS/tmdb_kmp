@@ -29,6 +29,14 @@ internal class TmdbApiClient(
             parameter("language", LANGUAGE)
         }
 
+    suspend fun searchMovies(query: String, page: Int): PopularMoviesResponseDto =
+        tmdbGet("${config.baseUrl}search/movie") {
+            parameter("language", LANGUAGE)
+            parameter("query", query)
+            parameter("page", page)
+            parameter("include_adult", false)
+        }
+
     suspend fun getConfiguration(): ConfigurationResponseDto =
         tmdbGet("${config.baseUrl}configuration")
 

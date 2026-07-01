@@ -13,10 +13,12 @@ import kotlinx.serialization.Serializable
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.discover.api.DiscoverComponent
 import pas.tmdb.feature.main.api.MainComponent
+import pas.tmdb.feature.search.api.SearchComponent
 
 class DefaultMainComponent(
     componentContext: ComponentContext,
     private val discoverComponentFactory: (ComponentContext, (Int) -> Unit) -> DiscoverComponent,
+    private val searchComponentFactory: (ComponentContext, (Int) -> Unit) -> SearchComponent,
     private val detailsComponentFactory: (ComponentContext, Int, () -> Unit) -> DetailsComponent,
 ) : MainComponent, ComponentContext by componentContext {
 
@@ -49,6 +51,12 @@ class DefaultMainComponent(
                 },
             )
 
+            Config.Search -> MainComponent.Child.Search(
+                searchComponentFactory(childContext) { movieId ->
+                    onMovieClick(movieId)
+                },
+            )
+
             is Config.Details -> MainComponent.Child.Details(
                 detailsComponentFactory(childContext, config.movieId) {
                     navigation.pop()
@@ -66,11 +74,15 @@ class DefaultMainComponent(
         data object Discover : Config
 
         @Serializable
+        data object Search : Config
+
+        @Serializable
         data class Details(val movieId: Int) : Config
     }
 
     private fun MainComponent.Tab.toConfig(): Config =
         when (this) {
             MainComponent.Tab.Discover -> Config.Discover
+            MainComponent.Tab.Search -> Config.Search
         }
 }

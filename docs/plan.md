@@ -380,9 +380,11 @@ modules(
 - [x] Child stack в `main-impl`
 - [x] `GET /movie/{id}`
 
-### Фаза 5 — Search
-- `search:impl`: `GET /search/movie`
-- Второй таб в main
+### Фаза 5 — Search ✅
+
+- [x] `search:impl`: Store + UI (`GET /search/movie`)
+- [x] Debounce ввода, пагинация, состояния (empty/loading/error/not found)
+- [x] Второй таб в main + переход в Details
 
 ### Фаза 6 — Auth
 - `auth:impl`: TMDB session flow
