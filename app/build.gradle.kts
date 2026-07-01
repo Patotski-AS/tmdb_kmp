@@ -8,6 +8,7 @@ kotlin {
             implementation(projects.core.common)
             implementation(projects.core.ui)
             implementation(projects.core.navigation)
+            implementation(projects.core.network)
             implementation(projects.auth.api)
             implementation(projects.auth.impl)
             implementation(projects.data.config.impl)
