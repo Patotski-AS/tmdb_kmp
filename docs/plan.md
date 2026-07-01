@@ -282,7 +282,8 @@ Label из discover: `NavigateToDetails(movieId)` → push в child stack `main-
 
 | Plugin ID | Модули | Включает |
 |-----------|--------|----------|
-| `tmdb.kmp.library` | `core:*`, `data:*:api` | kmp + android + ios + desktop |
+| `tmdb.kmp.library` | `core:common`, `core:navigation`, `core:network`, `data:*:api`, `auth:*` | kmp + android + ios + desktop |
+| `tmdb.cmp.library` | `core:ui` | + compose |
 | `tmdb.kmp.data.impl` | `data:*:impl` | + ktor, serialization |
 | `tmdb.kmp.feature.api` | `feature:*:api` | + decompose |
 | `tmdb.kmp.feature.impl` | `feature:*:impl` | + compose, mvikotlin |
@@ -337,11 +338,12 @@ modules(
 
 ## План по этапам
 
-### Фаза 1 — Скелет
-- Gradle: `build-logic` + пустые модули
-- `app`: Compose, Root → Main placeholder
-- Convention plugins
-- `local.properties` + `config:impl` для API key
+### Фаза 1 — Скелет ✅
+
+- [x] Gradle: `build-logic` + пустые модули
+- [x] `app`: Compose, Root → Main placeholder
+- [x] Convention plugins
+- [x] `local.properties` + `config:impl` для API key
 
 ### Фаза 2 — Сеть + TMDB
 - `tmdb:impl`: HttpClient, DTO, `MovieRepository`
@@ -391,4 +393,4 @@ modules(
 | Первая фича | `feature:discover` — popular movies |
 | Язык API | `ru-RU` |
 | Gradle | Convention plugins в `build-logic` |
-| Пакет | `com.tmdb.kmp.*` |
+| Пакет | `pas.tmdb.*` |

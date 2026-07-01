@@ -36,7 +36,7 @@ alwaysApply: false
 
 ## Пакеты
 
-Базовый пакет: `com.tmdb.kmp.<layer>.<module>` — например `com.tmdb.kmp.feature.discover.api`.
+Базовый пакет: `pas.tmdb.<layer>.<module>` — например `pas.tmdb.feature.discover.api`.
 
 ## Тесты
 
