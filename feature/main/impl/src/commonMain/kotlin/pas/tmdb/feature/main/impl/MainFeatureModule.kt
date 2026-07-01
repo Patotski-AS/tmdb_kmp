@@ -10,8 +10,8 @@ val mainFeatureModule = module {
     factory<MainComponent> { (componentContext: ComponentContext) ->
         DefaultMainComponent(
             componentContext = componentContext,
-            discoverComponentFactory = { childContext ->
-                get<DiscoverComponent> { parametersOf(childContext) }
+            discoverComponentFactory = { childContext, onNavigateToDetails ->
+                get<DiscoverComponent> { parametersOf(childContext, onNavigateToDetails) }
             },
         )
     }

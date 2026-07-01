@@ -13,9 +13,16 @@ val tmdbApiKey: String = Properties().apply {
 
 val generateTmdbApiKey = tasks.register("generateTmdbApiKey") {
     val outputDir = layout.buildDirectory.dir("generated/tmdbApiKey")
-    outputs.dir(outputDir)
+    val outputFile = outputDir.map { it.file("pas/tmdb/data/config/impl/internal/TmdbApiKey.kt") }
+
+    inputs.property("tmdbApiKey", tmdbApiKey)
+    if (localProperties.exists()) {
+        inputs.file(localProperties)
+    }
+    outputs.file(outputFile)
+
     doLast {
-        val file = outputDir.get().file("pas/tmdb/data/config/impl/internal/TmdbApiKey.kt").asFile
+        val file = outputFile.get().asFile
         file.parentFile.mkdirs()
         file.writeText(
             """

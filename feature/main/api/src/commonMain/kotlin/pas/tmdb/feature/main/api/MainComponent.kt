@@ -6,6 +6,13 @@ import pas.tmdb.feature.discover.api.DiscoverComponent
 
 interface MainComponent {
     val childStack: Value<ChildStack<*, Child>>
+    val selectedTab: Value<Tab>
+
+    fun onTabSelected(tab: Tab)
+
+    enum class Tab {
+        Discover,
+    }
 
     sealed interface Child {
         data class Discover(val component: DiscoverComponent) : Child

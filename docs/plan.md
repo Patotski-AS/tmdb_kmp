@@ -367,11 +367,12 @@ modules(
 - [x] `GET /movie/popular`, `GET /configuration`
 - [x] Mappers → domain models
 
-### Фаза 3 — Discover
-- `discover:impl`: Store + UI
-- `main:impl`: таб Discover
-- Pull-to-refresh, pagination, error/empty states
-- Coil для постеров
+### Фаза 3 — Discover ✅
+
+- [x] `discover:impl`: Store + UI
+- [x] `main:impl`: таб Discover (bottom navigation)
+- [x] Pull-to-refresh, pagination, error/empty states
+- [x] Coil для постеров
 
 ### Фаза 4 — Details
 - `details:impl`: Store + UI
