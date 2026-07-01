@@ -374,10 +374,11 @@ modules(
 - [x] Pull-to-refresh, pagination, error/empty states
 - [x] Coil для постеров
 
-### Фаза 4 — Details
-- `details:impl`: Store + UI
-- Child stack в `main-impl`
-- `GET /movie/{id}`
+### Фаза 4 — Details ✅
+
+- [x] `details:impl`: Store + UI
+- [x] Child stack в `main-impl`
+- [x] `GET /movie/{id}`
 
 ### Фаза 5 — Search
 - `search:impl`: `GET /search/movie`

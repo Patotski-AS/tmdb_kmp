@@ -3,6 +3,7 @@ package pas.tmdb.feature.main.impl
 import com.arkivanov.decompose.ComponentContext
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
+import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.discover.api.DiscoverComponent
 import pas.tmdb.feature.main.api.MainComponent
 
@@ -12,6 +13,9 @@ val mainFeatureModule = module {
             componentContext = componentContext,
             discoverComponentFactory = { childContext, onNavigateToDetails ->
                 get<DiscoverComponent> { parametersOf(childContext, onNavigateToDetails) }
+            },
+            detailsComponentFactory = { childContext, movieId, onBack ->
+                get<DetailsComponent> { parametersOf(childContext, movieId, onBack) }
             },
         )
     }

@@ -10,6 +10,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.JsonConvertException
 import pas.tmdb.data.config.api.TmdbConfig
 import pas.tmdb.data.tmdb.impl.dto.ConfigurationResponseDto
+import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
 import pas.tmdb.data.tmdb.impl.dto.TmdbErrorResponseDto
 
@@ -21,6 +22,11 @@ internal class TmdbApiClient(
         tmdbGet("${config.baseUrl}movie/popular") {
             parameter("language", LANGUAGE)
             parameter("page", page)
+        }
+
+    suspend fun getMovieDetails(movieId: Int): MovieDetailsDto =
+        tmdbGet("${config.baseUrl}movie/$movieId") {
+            parameter("language", LANGUAGE)
         }
 
     suspend fun getConfiguration(): ConfigurationResponseDto =

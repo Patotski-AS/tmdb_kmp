@@ -2,8 +2,10 @@ package pas.tmdb.data.tmdb.impl.mapper
 
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.Movie
+import pas.tmdb.data.tmdb.api.model.MovieDetails
 import pas.tmdb.data.tmdb.api.model.PagedMovies
 import pas.tmdb.data.tmdb.impl.dto.ConfigurationResponseDto
+import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
 
@@ -33,4 +35,18 @@ internal fun MovieDto.toDomain(imageConfiguration: ImageConfiguration): Movie =
         },
         voteAverage = voteAverage,
         releaseDate = releaseDate,
+    )
+
+internal fun MovieDetailsDto.toDomain(imageConfiguration: ImageConfiguration): MovieDetails =
+    MovieDetails(
+        id = id,
+        title = title,
+        overview = overview,
+        posterUrl = posterPath?.let { path ->
+            "${imageConfiguration.posterBaseUrl}${imageConfiguration.posterSize}$path"
+        },
+        voteAverage = voteAverage,
+        releaseDate = releaseDate,
+        runtime = runtime,
+        genres = genres.map { it.name },
     )
