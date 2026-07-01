@@ -3,6 +3,7 @@ package pas.tmdb.data.tmdb.impl.repository
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.MovieRepository
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
+import pas.tmdb.data.tmdb.api.model.MovieDetails
 import pas.tmdb.data.tmdb.api.model.PagedMovies
 import pas.tmdb.data.tmdb.impl.mapper.toDomain
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiClient
@@ -18,6 +19,12 @@ internal class MovieRepositoryImpl(
         runCatchingAppResult {
             val imageConfiguration = requireImageConfiguration()
             apiClient.getPopularMovies(page).toDomain(imageConfiguration)
+        }
+
+    override suspend fun getMovieDetails(movieId: Int): AppResult<MovieDetails> =
+        runCatchingAppResult {
+            val imageConfiguration = requireImageConfiguration()
+            apiClient.getMovieDetails(movieId).toDomain(imageConfiguration)
         }
 
     override suspend fun getImageConfiguration(): AppResult<ImageConfiguration> =

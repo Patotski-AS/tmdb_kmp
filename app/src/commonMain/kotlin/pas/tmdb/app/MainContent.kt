@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import pas.tmdb.feature.details.impl.DetailsContent
 import pas.tmdb.feature.discover.impl.DiscoverContent
 import pas.tmdb.feature.main.api.MainComponent
 
@@ -24,29 +25,42 @@ fun MainContent(
 ) {
     val childStack by component.childStack.subscribeAsState()
     val selectedTab by component.selectedTab.subscribeAsState()
+    val activeChild = childStack.active.instance
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(title = { Text("TMDB KMP") })
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == MainComponent.Tab.Discover,
-                    onClick = { component.onTabSelected(MainComponent.Tab.Discover) },
-                    icon = { Text("★") },
-                    label = { Text("Главная") },
-                )
-            }
-        },
-    ) { padding ->
-        Children(
-            stack = childStack,
-            modifier = Modifier.fillMaxSize().padding(padding),
-        ) { child ->
-            when (val instance = child.instance) {
-                is MainComponent.Child.Discover -> DiscoverContent(component = instance.component)
+    when (activeChild) {
+        is MainComponent.Child.Details -> {
+            DetailsContent(
+                component = activeChild.component,
+                modifier = modifier.fillMaxSize(),
+            )
+        }
+
+        is MainComponent.Child.Discover -> {
+            Scaffold(
+                modifier = modifier,
+                topBar = {
+                    TopAppBar(title = { Text("TMDB KMP") })
+                },
+                bottomBar = {
+                    NavigationBar {
+                        NavigationBarItem(
+                            selected = selectedTab == MainComponent.Tab.Discover,
+                            onClick = { component.onTabSelected(MainComponent.Tab.Discover) },
+                            icon = { Text("★") },
+                            label = { Text("Главная") },
+                        )
+                    }
+                },
+            ) { padding ->
+                Children(
+                    stack = childStack,
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                ) { child ->
+                    when (val instance = child.instance) {
+                        is MainComponent.Child.Discover -> DiscoverContent(component = instance.component)
+                        is MainComponent.Child.Details -> Unit
+                    }
+                }
             }
         }
     }

@@ -5,15 +5,19 @@ import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.router.stack.StackNavigation
 import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
+import com.arkivanov.decompose.router.stack.pop
+import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
+import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.discover.api.DiscoverComponent
 import pas.tmdb.feature.main.api.MainComponent
 
 class DefaultMainComponent(
     componentContext: ComponentContext,
     private val discoverComponentFactory: (ComponentContext, (Int) -> Unit) -> DiscoverComponent,
+    private val detailsComponentFactory: (ComponentContext, Int, () -> Unit) -> DetailsComponent,
 ) : MainComponent, ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -44,16 +48,25 @@ class DefaultMainComponent(
                     onMovieClick(movieId)
                 },
             )
+
+            is Config.Details -> MainComponent.Child.Details(
+                detailsComponentFactory(childContext, config.movieId) {
+                    navigation.pop()
+                },
+            )
         }
 
     private fun onMovieClick(movieId: Int) {
-        // Phase 4: push DetailsComponent onto child stack.
+        navigation.push(Config.Details(movieId))
     }
 
     @Serializable
     private sealed interface Config {
         @Serializable
         data object Discover : Config
+
+        @Serializable
+        data class Details(val movieId: Int) : Config
     }
 
     private fun MainComponent.Tab.toConfig(): Config =
