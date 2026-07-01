@@ -1,0 +1,52 @@
+---
+description: Общие правила проекта tmdb_kmp (TMDB KMP)
+alwaysApply: true
+---
+
+# TMDB KMP — общие правила
+
+Пет-проект **tmdb_kmp** на Kotlin Multiplatform с TMDB API. Локальный путь: `D:\Develop\Android\simple\tmdb_kmp`.
+
+## Язык и стиль работы
+
+- Общайся с пользователем **на русском**.
+- Минимальный diff: не рефактори и не трогай код вне задачи.
+- Следуй существующим соглашениям именования (`com.tmdb.kmp.*`) и структуре модулей.
+- Перед изменениями читай `docs/plan.md` — это источник архитектурных решений.
+
+## Ветки
+
+| Ветка | Назначение |
+|-------|------------|
+| `dev` | База для разработки — **от неё всегда ответвляться** |
+| `main` | Стабильная база |
+| `feature/*` | Новые фичи |
+| `fix/*` | Исправления багов |
+| `refactoring/*` | Рефакторинг |
+
+Подробности — в правиле `git-workflow`. Merge в `dev` и `main` **только с разрешения пользователя**.
+
+## Стек (не менять без согласования)
+
+- UI: **Compose Multiplatform**
+- Навигация: **Decompose**
+- Состояние: **MVIKotlin**
+- Сеть: **Ktor** + kotlinx.serialization
+- Изображения: **Coil**
+- DI: **Koin**
+- Платформы: **Android, iOS, Desktop (JVM)**
+
+## Сборка
+
+```bash
+./gradlew :androidApp:assembleDebug    # Android
+./gradlew :desktopApp:run              # Desktop
+```
+
+Версии зависимостей — только через `gradle/libs.versions.toml`.
+
+API key TMDB — в `local.properties` (`TMDB_API_KEY`), не коммитить.
+
+## Текущая фаза
+
+См. `docs/plan.md` → «План по этапам». Не реализуй фичи из будущих фаз, если пользователь явно не попросил.

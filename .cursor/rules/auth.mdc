@@ -1,0 +1,76 @@
+---
+description: Auth-модуль — сессия Guest/Authenticated, TMDB login, logout
+globs: auth/**/*.kt,feature/login*/**/*.kt,data/storage*/**/*.kt
+alwaysApply: false
+---
+
+# Auth-модуль
+
+**Auth — не экран логина.** Это инфраструктура сессии. UI логина — в `feature:login:impl`.
+
+## Модель: мягкая сессия (не зоны Root)
+
+| Состояние | Доступ |
+|-----------|--------|
+| `Guest` | browse: popular, details, search (через API key) |
+| `Authenticated` | browse + favorites, watchlist, рейтинги |
+
+Root **всегда** показывает `MainComponent`. Login — таб «Профиль» или `NavigateToLogin` из Store.
+
+## Разделение ответственности
+
+| Модуль | Что делает |
+|--------|------------|
+| `auth:api` | `SessionState`, `SessionRepository`, `AuthResultHandler`, `AuthLauncher` |
+| `auth:impl` | `SessionManager`, `TmdbSessionClient`, `LogoutCoordinator` |
+| `feature:login:impl` | UI логина + `PlatformAuthLauncher` (actual per platform) |
+| `data:storage:impl` | Persist session_id, accountId, username |
+| `data:config:impl` | API key (не session) |
+
+## TMDB login flow
+
+1. `GET /authentication/token/new` → `request_token`
+2. Пользователь подтверждает на themoviedb.org
+3. `GET /authentication/session/new` → `session_id`
+4. `AuthResultHandler.onLoginSuccess()` → `SessionState.Authenticated`
+
+## Платформенная стратегия
+
+| Платформа | Механизм |
+|-----------|----------|
+| Android | Custom Tabs / WebView → `PlatformAuthLauncher` (actual) |
+| iOS | ASWebAuthenticationSession → `PlatformAuthLauncher` (actual) |
+| Desktop | браузер + localhost callback → `OAuthClient` + `BrowserLauncher` (actual) |
+
+После получения `session_id` **все платформы** вызывают `AuthResultHandler.onLoginSuccess()` — дальше только `auth:impl`.
+
+## Нет token refresh
+
+TMDB session долгоживущая. **Нет** `TokenRefresher` и зоны `Refreshing`.
+
+При 401 на account endpoints: `logout()` → `Guest`; Store эмитит `NavigateToLogin`.
+
+## Скрытие account-фич
+
+1. **UI** — favorites/watchlist только при `Authenticated`; для Guest — «Войти».
+2. **Store** — intent account-действия при Guest → Label `NavigateToLogin`.
+3. **Repository** — account-методы требуют `session_id`; иначе `NotAuthenticated`.
+
+UI **не** обращается к `SessionRepository` напрямую — только через Component/Store.
+
+## Владение credentials
+
+- `data:config:impl` — API key (из `local.properties`)
+- `data:storage:impl` — persist session
+- `auth:impl` — session lifecycle, logout, `SessionState`
+- `data:tmdb:impl` — API key из `TmdbConfig`; session_id через `SessionRepository`
+
+## Logout
+
+`sessionRepository.logout()` из любой фичи → очистка storage, `Guest` → Main остаётся, account UI скрывается.
+
+## Desktop особенности
+
+- Redirect: `http://127.0.0.1:<port>/callback`
+- Браузер: `java.awt.Desktop.getDesktop().browse(uri)`
+- Хранение: encrypted file / Java Preferences в `data:storage:impl desktopMain`
