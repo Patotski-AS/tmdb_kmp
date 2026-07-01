@@ -6,6 +6,7 @@ import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.PagedMovies
 import pas.tmdb.data.tmdb.impl.mapper.toDomain
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiClient
+import pas.tmdb.data.tmdb.impl.remote.TmdbApiException
 
 internal class MovieRepositoryImpl(
     private val apiClient: TmdbApiClient,
@@ -37,8 +38,14 @@ internal class MovieRepositoryImpl(
             AppResult.Success(block())
         } catch (e: Exception) {
             AppResult.Error(
-                message = e.message ?: "Network request failed",
+                message = e.toUserMessage(),
                 cause = e,
             )
+        }
+
+    private fun Exception.toUserMessage(): String =
+        when (this) {
+            is TmdbApiException -> message.orEmpty()
+            else -> message ?: "Network request failed"
         }
 }
