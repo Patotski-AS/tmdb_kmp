@@ -11,6 +11,7 @@ import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import pas.tmdb.auth.impl.authModule
 import pas.tmdb.core.navigation.DefaultRootComponent
 import pas.tmdb.core.navigation.RootComponent
+import pas.tmdb.core.network.networkModule
 import pas.tmdb.core.ui.TmdbTheme
 import pas.tmdb.data.config.impl.configModule
 import pas.tmdb.data.storage.impl.storageModule
@@ -31,6 +32,7 @@ fun App() {
     KoinApplication(application = {
         modules(
             configModule,
+            networkModule,
             storageModule,
             authModule,
             tmdbDataModule,

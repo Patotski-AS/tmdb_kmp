@@ -296,14 +296,29 @@ Label из discover: `NavigateToDetails(movieId)` → push в child stack `main-
 ## API key
 
 1. Зарегистрировать приложение на [developer.themoviedb.org](https://developer.themoviedb.org/).
-2. API key хранить в `local.properties`:
+2. Ключ хранить в `local.properties` — **не коммитить** в git.
+3. `config:impl` читает значение в generated constant / expect-actual.
+
+### Сейчас (фаза 2)
+
+- Используется **Ключ API** (v3): query-параметр `api_key` в `TmdbApiClient`.
+- В `local.properties`:
 
 ```properties
-TMDB_API_KEY=your_api_key_here
+TMDB_API_KEY=your_v3_api_key_here
 ```
 
-3. `config:impl` читает ключ в `BuildConfig` / expect-actual — **не коммитить** в git.
-4. Для read-only можно использовать v4 read access token вместо v3 api_key.
+### План: перейти на Ключ доступа к API
+
+- Целевой способ — **API Read Access Token** (v4): заголовок `Authorization: Bearer <token>`.
+- Единый механизм auth для v3/v4 эндпоинтов; ключ не попадает в URL.
+- Изменения: `TmdbConfig` → bearer token, `HttpClient` default request / `TmdbApiClient` — убрать `parameter("api_key", ...)`.
+- Задача зафиксирована в **фазе 7** (можно выполнить раньше, до auth).
+
+```properties
+# целевое имя свойства (после миграции)
+TMDB_ACCESS_TOKEN=your_v4_read_access_token_here
+```
 
 ---
 
@@ -345,10 +360,12 @@ modules(
 - [x] Convention plugins
 - [x] `local.properties` + `config:impl` для API key
 
-### Фаза 2 — Сеть + TMDB
-- `tmdb:impl`: HttpClient, DTO, `MovieRepository`
-- `GET /movie/popular`, `GET /configuration`
-- Mappers → domain models
+### Фаза 2 — Сеть + TMDB ✅
+
+- [x] `core:network`: HttpClient, JSON, debug-логирование
+- [x] `tmdb:impl`: DTO, `TmdbApiClient`, `MovieRepository`
+- [x] `GET /movie/popular`, `GET /configuration`
+- [x] Mappers → domain models
 
 ### Фаза 3 — Discover
 - `discover:impl`: Store + UI
@@ -374,6 +391,7 @@ modules(
 ### Фаза 7 — Полировка
 - iOS + Desktop launchers
 - Shimmer, улучшение error states
+- **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
 - Тесты: `DiscoverStore`, `SessionManager` с fakes
 
 ---
@@ -388,7 +406,7 @@ modules(
 | Структура модулей | `:layer:name:api` / `:layer:name:impl` |
 | Auth | Мягкая сессия Guest/Authenticated; Root всегда Main |
 | Auth-модуль | Session, login flow, logout — не UI логина |
-| Browse без login | Да, через API key |
+| Browse без login | Да, через API key (v3 сейчас; v4 Bearer — см. фазу 7) |
 | Main | Тонкий shell, табы = отдельные feature-модули |
 | Первая фича | `feature:discover` — popular movies |
 | Язык API | `ru-RU` |
