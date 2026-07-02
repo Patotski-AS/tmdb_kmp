@@ -493,24 +493,25 @@ modules(
 - [x] **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
 - [x] Тесты: `DiscoverStore`, `SessionManager` с fakes
 
-### Фаза 8 — Главный экран + Media (фильмы)
+### Фаза 8 — Главный экран + Media (фильмы) ✅
 
-- [ ] Переименовать `feature:discover` → `feature:media` (api/impl, пакеты `pas.tmdb.feature.media.*`)
-- [ ] `main:impl`: новый shell — top bar (🔍 / 👤), bottom bar (Фильмы / Сериалы / Актёры)
-- [ ] Убрать нижние табы Search и Profile; Search и Profile — **push** в child stack
-- [ ] `media:impl`: `LazyVerticalGrid` 2 колонки, фиксированная высота ячейки, бесконечная пагинация
-- [ ] `core:ui`: `MediaPosterGrid` / `MediaPosterCell` (постер 2:3 + название)
-- [ ] Данные: `GET /movie/popular`, `language=ru-RU`, `page`
-- [ ] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро»
-- [ ] Shimmer / error / empty для grid
-- [ ] Клик по фильму → `DetailsComponent`
-- [ ] Тесты: `MediaStore` с fakes
+- [x] Переименовать `feature:discover` → `feature:media` (api/impl, пакеты `pas.tmdb.feature.media.*`)
+- [x] `main:impl`: новый shell — top bar (поиск / 👤), bottom bar (Фильмы / Сериалы / Актёры)
+- [x] Убрать нижние табы Search и Profile; Profile — **push** в child stack; поиск — **inline** в top bar
+- [x] `media:impl`: `LazyVerticalGrid` 2 колонки, фиксированная высота ячейки, бесконечная пагинация
+- [x] `core:ui`: `MediaPosterGrid` / `MediaPosterCell` (постер 2:3 + название, рамка, избранное)
+- [x] Данные: `GET /movie/popular`, `language=ru-RU`, `page`; `discover/movie` — подготовка фильтров
+- [x] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро»
+- [x] Shimmer / error / empty для grid; тема TMDB (`TmdbTheme`)
+- [x] Клик по фильму → `DetailsComponent`; сохранение скролла при возврате
+- [x] Избранное на постерах: рамка + звезда; синхронизация с API при старте (`FavoriteMoviesSynchronizer`)
+- [x] Тесты: `MediaStore` с fakes
 
 #### Навигация (фаза 8)
 
 | Действие | Переход |
 |----------|---------|
-| 🔍 | `NavigateToSearch` → push Search |
+| Поиск (top bar) | debounce → `search/movie` или `discover/movie` с фильтрами |
 | 👤 | `NavigateToProfile` → push Login/Profile |
 | Клик по постеру | push Details |
 | Bottom: Фильмы | `ContentType.Movies` |

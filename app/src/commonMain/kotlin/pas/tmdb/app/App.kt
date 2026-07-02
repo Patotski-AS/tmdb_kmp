@@ -19,7 +19,7 @@ import pas.tmdb.data.config.impl.configModule
 import pas.tmdb.data.storage.impl.storageModule
 import pas.tmdb.data.tmdb.impl.tmdbDataModule
 import pas.tmdb.feature.details.impl.detailsFeatureModule
-import pas.tmdb.feature.discover.impl.discoverFeatureModule
+import pas.tmdb.feature.media.impl.mediaFeatureModule
 import pas.tmdb.feature.login.impl.loginFeatureModule
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.main.impl.mainFeatureModule
@@ -38,7 +38,7 @@ fun App() {
             storageModule,
             authModule,
             tmdbDataModule,
-            discoverFeatureModule,
+            mediaFeatureModule,
             detailsFeatureModule,
             searchFeatureModule,
             loginFeatureModule,

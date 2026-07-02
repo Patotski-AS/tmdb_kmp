@@ -4,12 +4,14 @@ import pas.tmdb.auth.api.SessionRepository
 import pas.tmdb.auth.api.SessionState
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.AccountRepository
+import pas.tmdb.data.tmdb.api.FavoriteMoviesCache
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiClient
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiException
 
 internal class AccountRepositoryImpl(
     private val apiClient: TmdbApiClient,
     private val sessionRepository: SessionRepository,
+    private val favoriteMoviesCache: FavoriteMoviesCache,
 ) : AccountRepository {
 
     override suspend fun isFavorite(movieId: Int): AppResult<Boolean> =
@@ -17,14 +19,37 @@ internal class AccountRepositoryImpl(
             apiClient.getMovieAccountStates(movieId, sessionId).favorite
         }
 
-    override suspend fun setFavorite(movieId: Int, favorite: Boolean): AppResult<Unit> =
-        withAuthenticatedSession { sessionId, accountId ->
+    override suspend fun setFavorite(movieId: Int, favorite: Boolean): AppResult<Unit> {
+        val result = withAuthenticatedSession { sessionId, accountId ->
             apiClient.setFavorite(
                 accountId = accountId,
                 movieId = movieId,
                 favorite = favorite,
                 sessionId = sessionId,
             )
+        }
+        if (result is AppResult.Success) {
+            favoriteMoviesCache.setFavorite(movieId, favorite)
+        }
+        return result
+    }
+
+    override suspend fun getFavoriteMovieIds(): AppResult<Set<Int>> =
+        withAuthenticatedSession { sessionId, accountId ->
+            val ids = mutableSetOf<Int>()
+            var page = 1
+            var totalPages = 1
+            do {
+                val response = apiClient.getFavoriteMovies(
+                    accountId = accountId,
+                    sessionId = sessionId,
+                    page = page,
+                )
+                ids.addAll(response.results.map { it.id })
+                totalPages = response.totalPages
+                page++
+            } while (page <= totalPages)
+            ids
         }
 
     private suspend inline fun <T> withAuthenticatedSession(

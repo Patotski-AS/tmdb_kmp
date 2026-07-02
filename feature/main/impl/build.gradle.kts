@@ -6,9 +6,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.feature.main.api)
-            implementation(projects.feature.discover.api)
+            implementation(projects.feature.media.api)
             implementation(projects.feature.details.api)
-            implementation(projects.feature.search.api)
             implementation(projects.feature.login.api)
             implementation(projects.core.ui)
         }

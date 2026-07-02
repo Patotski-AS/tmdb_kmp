@@ -43,6 +43,18 @@ internal class TmdbApiClient(
             parameter("include_adult", false)
         }
 
+    suspend fun discoverMovies(
+        page: Int,
+        genreId: Int? = null,
+        sortBy: String? = null,
+    ): PopularMoviesResponseDto =
+        tmdbGet("${config.baseUrl}discover/movie") {
+            parameter("language", LANGUAGE)
+            parameter("page", page)
+            genreId?.let { parameter("with_genres", it) }
+            sortBy?.let { parameter("sort_by", it) }
+        }
+
     suspend fun getConfiguration(): ConfigurationResponseDto =
         tmdbGet("${config.baseUrl}configuration")
 
@@ -73,6 +85,17 @@ internal class TmdbApiClient(
             throw response.parseTmdbError()
         }
     }
+
+    suspend fun getFavoriteMovies(
+        accountId: Int,
+        sessionId: String,
+        page: Int,
+    ): PopularMoviesResponseDto =
+        tmdbGet("${config.baseUrl}account/$accountId/favorite/movies") {
+            parameter("session_id", sessionId)
+            parameter("language", LANGUAGE)
+            parameter("page", page)
+        }
 
     private suspend inline fun <reified T> tmdbGet(
         url: String,
