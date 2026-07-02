@@ -9,6 +9,7 @@ kotlin {
             implementation(projects.feature.discover.api)
             implementation(projects.feature.details.api)
             implementation(projects.feature.search.api)
+            implementation(projects.feature.login.api)
             implementation(projects.core.ui)
         }
     }

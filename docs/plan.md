@@ -386,11 +386,12 @@ modules(
 - [x] Debounce ввода, пагинация, состояния (empty/loading/error/not found)
 - [x] Второй таб в main + переход в Details
 
-### Фаза 6 — Auth
-- `auth:impl`: TMDB session flow
-- `login:impl`: UI + platform launchers
-- Profile tab: Guest → login, Authenticated → logout
-- Account-фичи: favorites (скрытие для Guest)
+### Фаза 6 — Auth ✅
+
+- [x] `auth:impl`: TMDB session flow
+- [x] `login:impl`: UI + platform launchers
+- [x] Profile tab: Guest → login, Authenticated → logout
+- [x] Account-фичи: favorites (скрытие для Guest)
 
 ### Фаза 7 — Полировка
 - iOS + Desktop launchers

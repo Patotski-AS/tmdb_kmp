@@ -1,7 +1,16 @@
 package pas.tmdb.feature.login.impl
 
+import com.arkivanov.decompose.ComponentContext
 import org.koin.dsl.module
+import pas.tmdb.feature.login.api.LoginComponent
+import pas.tmdb.feature.login.impl.store.LoginStoreFactory
 
 val loginFeatureModule = module {
-    // Phase 6.
+    factory { LoginStoreFactory(storeFactory = get(), sessionClient = get(), sessionRepository = get(), authResultHandler = get()) }
+    factory<LoginComponent> { (componentContext: ComponentContext) ->
+        DefaultLoginComponent(
+            componentContext = componentContext,
+            storeFactory = get(),
+        )
+    }
 }
