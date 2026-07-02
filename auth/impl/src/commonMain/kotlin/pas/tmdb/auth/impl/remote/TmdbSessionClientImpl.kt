@@ -11,11 +11,13 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import pas.tmdb.auth.api.TmdbAccountInfo
+import pas.tmdb.auth.api.TmdbLoginResult
 import pas.tmdb.auth.api.TmdbSessionClient
 import pas.tmdb.auth.impl.dto.AccountResponseDto
 import pas.tmdb.auth.impl.dto.RequestTokenResponseDto
 import pas.tmdb.auth.impl.dto.SessionRequestDto
 import pas.tmdb.auth.impl.dto.SessionResponseDto
+import pas.tmdb.auth.impl.dto.ValidateWithLoginRequestDto
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.config.api.TmdbConfig
 
@@ -48,6 +50,65 @@ internal class TmdbSessionClientImpl(
                 throw AuthApiException("Не удалось создать сессию. Подтвердите вход на themoviedb.org")
             }
             response.sessionId
+        }
+
+    override suspend fun validateWithLogin(
+        requestToken: String,
+        username: String,
+        password: String,
+    ): AppResult<String> =
+        runCatchingAppResult {
+            val response = httpClient.post("${config.baseUrl}authentication/token/validate_with_login") {
+                parameter("api_key", config.apiKey)
+                contentType(ContentType.Application.Json)
+                setBody(
+                    ValidateWithLoginRequestDto(
+                        username = username,
+                        password = password,
+                        requestToken = requestToken,
+                    ),
+                )
+            }.parseBody<RequestTokenResponseDto>()
+
+            if (!response.success || response.requestToken.isNullOrBlank()) {
+                throw AuthApiException("Неверный логин или пароль")
+            }
+            response.requestToken
+        }
+
+    override suspend fun loginWithCredentials(
+        username: String,
+        password: String,
+    ): AppResult<TmdbLoginResult> =
+        when (val tokenResult = createRequestToken()) {
+            is AppResult.Error -> AppResult.Error(tokenResult.message, tokenResult.cause)
+            is AppResult.Success -> {
+                when (
+                    val validatedTokenResult = validateWithLogin(
+                        requestToken = tokenResult.value,
+                        username = username,
+                        password = password,
+                    )
+                ) {
+                    is AppResult.Error -> AppResult.Error(validatedTokenResult.message, validatedTokenResult.cause)
+                    is AppResult.Success -> {
+                        when (val sessionResult = createSession(validatedTokenResult.value)) {
+                            is AppResult.Error -> AppResult.Error(sessionResult.message, sessionResult.cause)
+                            is AppResult.Success -> {
+                                when (val accountResult = getAccount(sessionResult.value)) {
+                                    is AppResult.Error -> AppResult.Error(accountResult.message, accountResult.cause)
+                                    is AppResult.Success -> AppResult.Success(
+                                        TmdbLoginResult(
+                                            sessionId = sessionResult.value,
+                                            account = accountResult.value,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
     override suspend fun getAccount(sessionId: String): AppResult<TmdbAccountInfo> =

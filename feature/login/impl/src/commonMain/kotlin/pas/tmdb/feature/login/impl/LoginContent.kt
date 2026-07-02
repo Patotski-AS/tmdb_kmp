@@ -4,18 +4,29 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.auth.api.SessionState
@@ -46,7 +57,10 @@ fun LoginContent(
                     isLoading = model.isLoading,
                     isAwaitingApproval = model.isAwaitingApproval,
                     error = model.error,
-                    onLogin = { component.onIntent(LoginIntent.Login) },
+                    onLoginWithBrowser = { component.onIntent(LoginIntent.Login) },
+                    onLoginWithCredentials = { username, password ->
+                        component.onIntent(LoginIntent.LoginWithCredentials(username, password))
+                    },
                     onConfirmApproval = { component.onIntent(LoginIntent.ConfirmApproval) },
                     onCancelApproval = { component.onIntent(LoginIntent.CancelApproval) },
                     onDismissError = { component.onIntent(LoginIntent.DismissError) },
@@ -70,14 +84,20 @@ private fun GuestContent(
     isLoading: Boolean,
     isAwaitingApproval: Boolean,
     error: String?,
-    onLogin: () -> Unit,
+    onLoginWithBrowser: () -> Unit,
+    onLoginWithCredentials: (username: String, password: String) -> Unit,
     onConfirmApproval: () -> Unit,
     onCancelApproval: () -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var username by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+
     Column(
-        modifier = modifier.padding(24.dp),
+        modifier = modifier
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -132,8 +152,48 @@ private fun GuestContent(
             }
 
             else -> {
-                Button(onClick = onLogin) {
-                    Text("Войти через TMDB")
+                Button(
+                    onClick = onLoginWithBrowser,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Войти через сайт TMDB")
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text(
+                    text = "или логин и пароль",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Логин TMDB") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Пароль") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Button(
+                    onClick = {
+                        onLoginWithCredentials(username.trim(), password)
+                        password = ""
+                    },
+                    enabled = username.isNotBlank() && password.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Войти")
                 }
             }
         }

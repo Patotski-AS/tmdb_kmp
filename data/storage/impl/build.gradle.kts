@@ -8,5 +8,8 @@ kotlin {
             implementation(projects.data.storage.api)
             implementation(libs.koin.core)
         }
+        androidMain.dependencies {
+            implementation(libs.androidx.security.crypto)
+        }
     }
 }

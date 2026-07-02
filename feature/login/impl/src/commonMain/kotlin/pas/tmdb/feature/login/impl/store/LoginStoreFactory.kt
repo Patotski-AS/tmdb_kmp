@@ -63,6 +63,10 @@ class LoginStoreFactory(
         override fun executeIntent(intent: LoginIntent) {
             when (intent) {
                 LoginIntent.Login -> startLogin()
+                is LoginIntent.LoginWithCredentials -> loginWithCredentials(
+                    username = intent.username,
+                    password = intent.password,
+                )
                 LoginIntent.ConfirmApproval -> completeLogin()
                 LoginIntent.CancelApproval -> cancelApproval()
                 LoginIntent.Logout -> logout()
@@ -137,6 +141,35 @@ class LoginStoreFactory(
 
         private fun cancelApproval() {
             dispatch(Message.AwaitingApprovalChanged(isAwaitingApproval = false, requestToken = null))
+        }
+
+        private fun loginWithCredentials(username: String, password: String) {
+            if (state().isLoading || state().isAwaitingApproval) return
+            if (username.isBlank() || password.isBlank()) {
+                dispatch(Message.ErrorChanged(error = "Введите логин и пароль"))
+                return
+            }
+
+            scope.launch {
+                dispatch(Message.LoadingChanged(isLoading = true))
+                dispatch(Message.ErrorChanged(error = null))
+
+                when (val result = sessionClient.loginWithCredentials(username, password)) {
+                    is AppResult.Success -> {
+                        authResultHandler.onLoginSuccess(
+                            sessionId = result.value.sessionId,
+                            accountId = result.value.account.id,
+                            username = result.value.account.username,
+                        )
+                    }
+
+                    is AppResult.Error -> {
+                        dispatch(Message.ErrorChanged(error = result.message))
+                    }
+                }
+
+                dispatch(Message.LoadingChanged(isLoading = false))
+            }
         }
 
         private fun logout() {

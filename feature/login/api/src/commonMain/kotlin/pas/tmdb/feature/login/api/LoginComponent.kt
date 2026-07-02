@@ -19,6 +19,10 @@ data class LoginModel(
 
 sealed interface LoginIntent {
     data object Login : LoginIntent
+    data class LoginWithCredentials(
+        val username: String,
+        val password: String,
+    ) : LoginIntent
     data object ConfirmApproval : LoginIntent
     data object CancelApproval : LoginIntent
     data object Logout : LoginIntent
