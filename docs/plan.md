@@ -117,15 +117,32 @@ User session нужна только для account-фич (favorites, watchlist
 
 ### Платформенная стратегия login
 
-TMDB user flow: `request_token` → подтверждение на themoviedb.org → `session_id`.
+Два способа входа; после получения `session_id` оба вызывают `AuthResultHandler.onLoginSuccess()` — дальше только `auth:impl`.
+
+#### Способ A — через сайт (рекомендуемый TMDB)
+
+`request_token` → подтверждение на themoviedb.org → `session_id`.
 
 | Платформа | Механизм |
 |-----------|----------|
-| Android | Custom Tabs / WebView → `PlatformAuthLauncher` (actual) |
-| iOS | ASWebAuthenticationSession → `PlatformAuthLauncher` (actual) |
-| Desktop | браузер + localhost callback → `OAuthClient` + `BrowserLauncher` (actual) |
+| Android / iOS / Desktop | `LocalUriHandler.openUri()` → экран «Продолжить» в `login:impl` |
 
-После успеха все платформы вызывают `AuthResultHandler.onLoginSuccess()` — дальше только `auth:impl`.
+#### Способ B — логин и пароль (альтернатива без браузера)
+
+`request_token` → `POST /authentication/token/validate_with_login` → `session_id`.
+
+| Шаг | Endpoint / действие |
+|-----|---------------------|
+| 1 | `GET /authentication/token/new` |
+| 2 | `POST /authentication/token/validate_with_login` (username, password, request_token) |
+| 3 | `POST /authentication/session/new` |
+| 4 | `GET /account` → `onLoginSuccess()` |
+
+**Ограничения:** TMDB не рекомендует этот способ; пароль **не сохраняется** — только в RAM на время запроса. Обязателен HTTPS.
+
+| Платформа | UI |
+|-----------|-----|
+| Все (CMP) | форма логин/пароль на табе «Профиль» в `login:impl` |
 
 ### Контракты (`auth:api`)
 
@@ -148,6 +165,14 @@ interface AuthResultHandler {
     suspend fun onLoginSuccess(sessionId: String, accountId: Int, username: String?)
 }
 
+interface TmdbSessionClient {
+    suspend fun createRequestToken(): AppResult<String>
+    suspend fun validateWithLogin(requestToken: String, username: String, password: String): AppResult<String>
+    suspend fun createSession(requestToken: String): AppResult<String>
+    suspend fun getAccount(sessionId: String): AppResult<TmdbAccountInfo>
+    suspend fun loginWithCredentials(username: String, password: String): AppResult<TmdbLoginResult>
+}
+
 interface AuthLauncher {
     suspend fun launch(): AuthLaunchResult
 }
@@ -163,12 +188,20 @@ sealed interface AuthLaunchResult {
 
 | Компонент | Роль |
 |-----------|------|
-| `AuthResultHandlerImpl` | save session → `SessionState.Authenticated` |
-| `SessionManager` | `SessionRepository`, единый источник правды |
-| `TmdbSessionClient` | request_token, create session через TMDB API |
-| `LogoutCoordinator` | clear storage, `Guest` |
+| `SessionManager` | `SessionRepository` + `AuthResultHandler`; restore сессии из storage при старте |
+| `TmdbSessionClient` | request_token, validate_with_login, create session, account через TMDB API |
+| `LogoutCoordinator` | (в `SessionManager`) clear storage → `Guest` |
 
 **Нет** `TokenRefresher` и зоны `Refreshing` — TMDB session долгоживущая.
+
+### Persist сессии (`data:storage:impl`)
+
+| Платформа | Реализация |
+|-----------|------------|
+| Android | `EncryptedSharedPreferences` + `MasterKey` (AES256, Android Keystore) |
+| iOS / Desktop | `InMemorySessionStorage` (persistent — фаза 7) |
+
+Хранится: `session_id`, `accountId`, `username`. Пароль TMDB **не** хранится.
 
 ### Обработка 401 на account endpoints
 
@@ -388,13 +421,35 @@ modules(
 
 ### Фаза 6 — Auth ✅
 
-- [x] `auth:impl`: TMDB session flow
-- [x] `login:impl`: UI + platform launchers
-- [x] Profile tab: Guest → login, Authenticated → logout
-- [x] Account-фичи: favorites (скрытие для Guest)
+- [x] `auth:impl`: TMDB session flow (`TmdbSessionClient`, `SessionManager`)
+- [x] `login:impl`: UI — вход через сайт + альтернатива логин/пароль
+- [x] Profile tab: Guest → login, Authenticated → профиль + logout
+- [x] Account-фичи: favorites на details (скрытие для Guest, `NavigateToLogin`)
+- [x] Android: encrypted session storage (Keystore / `EncryptedSharedPreferences`)
+- [x] `AccountRepository`: favorites + logout при 401
+
+#### Login UI (`feature:login:impl`)
+
+| Intent | Действие |
+|--------|----------|
+| `Login` | browser flow: token → `OpenBrowser` → `ConfirmApproval` |
+| `LoginWithCredentials` | `loginWithCredentials()` без браузера |
+| `Logout` | `sessionRepository.logout()` |
+
+#### TMDB API (auth)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /authentication/token/new` | request_token |
+| `POST /authentication/token/validate_with_login` | альтернативный вход (логин/пароль) |
+| `POST /authentication/session/new` | session_id |
+| `GET /account` | accountId, username |
+| `GET /movie/{id}/account_states` | isFavorite |
+| `POST /account/{id}/favorite` | add/remove favorite |
 
 ### Фаза 7 — Полировка
-- iOS + Desktop launchers
+- iOS + Desktop: platform launchers (Custom Tabs, ASWebAuthenticationSession, OAuth callback)
+- iOS + Desktop: persistent encrypted session storage (Keychain / encrypted file)
 - Shimmer, улучшение error states
 - **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
 - Тесты: `DiscoverStore`, `SessionManager` с fakes
