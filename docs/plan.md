@@ -18,7 +18,7 @@
 ## Архитектурные принципы
 
 - **Многомодульность:** `core` / `data` / `auth` / `feature`, каждый слой разделён на **api** и **impl**.
-- **Именование модулей:** `:layer:name:api` / `:layer:name:impl` (например `:feature:discover:api`).
+- **Именование модулей:** `:layer:name:api` / `:layer:name:impl` (например `:feature:media:api`).
 - **Зависимости:** feature-модули зависят только от **api** других модулей, никогда от чужих **impl**.
 - **Сборка DI:** только модуль `app` подключает все **impl** и собирает граф зависимостей.
 - **UI:** весь UI на Compose; бизнес-логика и навигация — в shared.
@@ -63,9 +63,12 @@ tmdb-kmp/
     ├── main/
     │   ├── api/
     │   └── impl/                           # shell: tabs, child stacks
-    ├── discover/
+    ├── media/                              # каталог: фильмы / сериалы / актёры (фаза 8+, ранее discover)
     │   ├── api/
-    │   └── impl/                           # первая фича — каталог
+    │   └── impl/
+    ├── person/                             # карточка актёра (фаза 11)
+    │   ├── api/
+    │   └── impl/
     ├── details/
     │   ├── api/
     │   └── impl/                           # карточка фильма
@@ -79,14 +82,15 @@ tmdb-kmp/
 ```
 app
  ├─ auth:impl, storage:impl, config:impl, tmdb:impl
- ├─ login:impl, main:impl, discover:impl, details:impl, search:impl
+ ├─ login:impl, main:impl, media:impl, details:impl, search:impl, person:impl
  └─ core:*
 
-discover:impl  → discover:api, auth:api, data:tmdb:api, core:ui
+media:impl     → media:api, auth:api, data:tmdb:api, core:ui
 details:impl   → details:api, auth:api, data:tmdb:api, core:ui
 search:impl    → search:api, auth:api, data:tmdb:api, core:ui
 login:impl     → login:api, auth:api, core:ui
-main:impl      → main:api, discover:api, details:api, search:api, login:api, auth:api, core:ui
+person:impl    → person:api, data:tmdb:api, core:ui
+main:impl      → main:api, media:api, details:api, search:api, login:api, person:api, auth:api, core:ui
 
 auth:impl      → auth:api, storage:api, data:tmdb:api, core:network
 tmdb:impl      → tmdb:api, config:api, auth:api, core:network
@@ -142,7 +146,7 @@ User session нужна только для account-фич (favorites, watchlist
 
 | Платформа | UI |
 |-----------|-----|
-| Все (CMP) | форма логин/пароль на табе «Профиль» в `login:impl` |
+| Все (CMP) | форма логин/пароль на экране профиля в `login:impl` (push с фазы 8) |
 
 ### Контракты (`auth:api`)
 
@@ -228,17 +232,34 @@ Ktor interceptor при 401 на account-запросах:
 
 ## Навигация (Decompose)
 
+### Сейчас (фазы 1–7)
+
 ```
 RootComponent                              [:app]
 └─ MainComponent                           [:feature:main]
-     ├─ DiscoverComponent (tab)            [:feature:discover]
-     ├─ SearchComponent (tab)              [:feature:search]   ← фаза 5
-     ├─ ProfileComponent (tab)             [:feature:login]   ← Guest: login, Auth: профиль + logout
-     └─ DetailsComponent (child stack)     [:feature:details]  ← push из discover/search
+     ├─ DiscoverComponent (tab)            [:feature:discover]  → media в фазе 8
+     ├─ SearchComponent (tab)              [:feature:search]
+     ├─ ProfileComponent (tab)             [:feature:login]
+     └─ DetailsComponent (child stack)     [:feature:details]
+```
+
+### Целевая (фаза 8+)
+
+```
+RootComponent                              [:app]
+└─ MainComponent                           [:feature:main]
+     ├─ MediaComponent (основной экран)    [:feature:media]
+     │    ├─ top: 🔍 Search (push)         [:feature:search]
+     │    ├─ top: 👤 Profile (push)        [:feature:login]   ← фаза 9: избранное
+     │    ├─ FAB: фильтры (bottom sheet)   ← фаза 8b
+     │    └─ bottom: Фильмы | Сериалы | Актёры  (ContentType)
+     ├─ DetailsComponent (movie/tv)        [:feature:details]
+     └─ PersonComponent                    [:feature:person]    ← фаза 11
 ```
 
 - Root **не** переключает зоны — всегда `MainComponent`.
-- Login — таб «Профиль» или Label `NavigateToLogin` из других фич.
+- Поиск и профиль — **push** в child stack, не нижние табы.
+- Login — экран профиля или Label `NavigateToLogin` из других фич.
 - Logout: `sessionRepository.logout()` → `Guest`, Main остаётся, account UI скрывается.
 
 ### Паттерн на экран
@@ -249,45 +270,65 @@ RootComponent                              [:app]
 
 ---
 
-## Первая фича: каталог (`feature:discover`)
+## Первая фича: каталог (`feature:discover` → `feature:media`)
 
-### MVP
+> **Фазы 3–7:** реализовано как `feature:discover` (вертикальный список popular).
+> **Фаза 8:** переименование в `feature:media`, новый UI и shell (см. план по этапам).
+
+### Каталог MVP (фазы 3–7, legacy)
 
 - таб «Главная» в `main-impl`;
-- список popular / trending с постерами;
-- pull-to-refresh;
-- пагинация при скролле;
+- список popular с постерами;
+- pull-to-refresh, пагинация при скролле;
 - клик → `DetailsComponent`;
-- состояния: Loading / Error / Empty / Content;
-- account-кнопки скрыты для Guest.
+- состояния: Loading / Error / Empty / Content.
 
-### MVIKotlin `DiscoverStore`
+### Главный экран (`feature:media`, фаза 8+)
+
+Один feature-модуль для **фильмов / сериалов / актёров** — общий grid UI, различие по `ContentType` в Store.
+
+#### Layout
+
+| Зона | Поведение |
+|------|-----------|
+| Top-left | 🔍 → push `SearchComponent` |
+| Top-right | 👤 → push `LoginComponent` / профиль (фаза 9) |
+| Контент | `LazyVerticalGrid`, **2 колонки**, фиксированная высота ячейки, постер 2:3 + название |
+| FAB | Фильтры → bottom sheet (фаза 8b; только для фильмов) |
+| Bottom bar | **Фильмы** \| **Сериалы** \| **Актёры** (`ContentType`) |
+
+#### Ячейка сетки (`core:ui`)
+
+- Постер (`ContentScale.Crop`) + название под ним (max 2 строки, ellipsis).
+- Опционально badge рейтинга на постере.
+- Фиксированная высота ячейки — без `wrapContent` по вертикали.
+
+#### MVIKotlin `MediaStore`
 
 | | |
 |---|---|
-| **Intent** | `Load`, `Refresh`, `LoadMore`, `OnMovieClick` |
-| **State** | `movies`, `isLoading`, `isRefreshing`, `error`, `page`, `endReached`, `sessionState` |
-| **Label** | `NavigateToDetails(movieId)`, `ShowError(message)` |
+| **Intent** | `Load`, `LoadMore`, `OnItemClick`, `OnContentTypeSelected`, `OnSearchClick`, `OnProfileClick`, `OnFilterClick`, `ApplyFilters`, `ResetFilters` |
+| **State** | `contentType`, `items`, `isLoading`, `isLoadingMore`, `error`, `page`, `endReached`, `filters` (фаза 8b) |
+| **Label** | `NavigateToDetails(id)`, `NavigateToPerson(id)`, `NavigateToSearch`, `NavigateToProfile`, `ShowFilterSheet`, `ShowError(message)` |
 
-### TMDB API (MVP)
+#### Детали по типу контента
 
-| Endpoint | Назначение |
-|----------|------------|
-| `GET /movie/popular` | популярные фильмы |
-| `GET /trending/movie/day` | тренды (опционально, вторая секция) |
-| `GET /configuration` | base URL для постеров |
+| ContentType | Каталог | Детали |
+|-------------|---------|--------|
+| `Movies` | grid + пагинация | `feature:details` (фильм) |
+| `Tv` | grid + пагинация (фаза 10) | `feature:details` (сериал, расширение) |
+| `People` | grid, круглое фото (фаза 11) | `feature:person` |
 
-Параметры: `api_key`, `language=ru-RU`, `page`.
+Фильмы и сериалы — **общий каркас** экрана деталей; актёр — **отдельный** модуль `feature:person`.
 
-### Поток данных
+#### Поток данных
 
 ```
-DiscoverContent (Compose)
-  → DiscoverComponent.onIntent
-  → DiscoverStore
-  → GetPopularMoviesUseCase
-  → MovieRepository (tmdb-impl)
-  → TmdbApiClient (+ api_key из TmdbConfig)
+MediaContent (Compose)
+  → MediaComponent.onIntent
+  → MediaStore
+  → MediaRepository / MovieRepository (tmdb-impl)
+  → TmdbApiClient (Bearer из TmdbConfig)
 ```
 
 ---
@@ -297,17 +338,22 @@ DiscoverContent (Compose)
 | Endpoint | Назначение |
 |----------|------------|
 | `GET /movie/{movie_id}` | название, описание, рейтинг, жанры, runtime |
-| `GET /movie/{movie_id}/credits` | актёры (фаза 4+) |
+| `GET /movie/{movie_id}/credits` | актёры (будущее расширение) |
+| `GET /tv/{series_id}` | детали сериала (фаза 10) |
 
-Label из discover: `NavigateToDetails(movieId)` → push в child stack `main-impl`.
+Label из media/search: `NavigateToDetails(id)` → push в child stack `main-impl`.
+Сериал — тот же модуль `details`, общий каркас UI с фильмом; актёр — `feature:person` (фаза 11).
 
 ---
 
 ## Main-модуль
 
-`main-impl` — **тонкий shell**: bottom navigation + tab navigator + child stack для details. Без бизнес-логики.
+`main-impl` — **тонкий shell**: навигация + child stack. Без бизнес-логики.
 
-Каждый таб — отдельный feature-модуль (`discover`, `search`, `login`/profile).
+| Эра | Shell |
+|-----|-------|
+| Фазы 3–7 | Bottom: Discover / Search / Profile + stack Details |
+| Фаза 8+ | `MediaComponent` + bottom ContentType (Фильмы/Сериалы/Актёры); Search и Profile — push; stack Details / Person |
 
 ---
 
@@ -363,10 +409,11 @@ modules(
     storageImplModule,
     authImplModule,
     tmdbImplModule,
-    discoverFeatureModule,
+    mediaFeatureModule,        // ранее discoverFeatureModule (фаза 8)
     detailsFeatureModule,
     searchFeatureModule,
     loginFeatureModule,
+    personFeatureModule,       // фаза 11
     mainFeatureModule,
     appModule,             // RootComponent factory
 )
@@ -446,6 +493,102 @@ modules(
 - [x] **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
 - [x] Тесты: `DiscoverStore`, `SessionManager` с fakes
 
+### Фаза 8 — Главный экран + Media (фильмы)
+
+- [ ] Переименовать `feature:discover` → `feature:media` (api/impl, пакеты `pas.tmdb.feature.media.*`)
+- [ ] `main:impl`: новый shell — top bar (🔍 / 👤), bottom bar (Фильмы / Сериалы / Актёры)
+- [ ] Убрать нижние табы Search и Profile; Search и Profile — **push** в child stack
+- [ ] `media:impl`: `LazyVerticalGrid` 2 колонки, фиксированная высота ячейки, бесконечная пагинация
+- [ ] `core:ui`: `MediaPosterGrid` / `MediaPosterCell` (постер 2:3 + название)
+- [ ] Данные: `GET /movie/popular`, `language=ru-RU`, `page`
+- [ ] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро»
+- [ ] Shimmer / error / empty для grid
+- [ ] Клик по фильму → `DetailsComponent`
+- [ ] Тесты: `MediaStore` с fakes
+
+#### Навигация (фаза 8)
+
+| Действие | Переход |
+|----------|---------|
+| 🔍 | `NavigateToSearch` → push Search |
+| 👤 | `NavigateToProfile` → push Login/Profile |
+| Клик по постеру | push Details |
+| Bottom: Фильмы | `ContentType.Movies` |
+| Bottom: Сериалы / Актёры | заглушка |
+
+### Фаза 8b — Фильтры (только фильмы)
+
+- [ ] FAB на экране Media → bottom sheet
+- [ ] Фильтры MVP: **жанр** (dropdown), **сортировка** (популярность / дата / рейтинг)
+- [ ] `GET /genre/movie/list` — список жанров
+- [ ] При активных фильтрах: `GET /discover/movie` (`with_genres`, `sort_by`)
+- [ ] Без фильтров: `GET /movie/popular` (как в фазе 8)
+- [ ] Кнопки «Применить» / «Сбросить»; сброс перезагружает popular
+- [ ] FAB скрыт или disabled для вкладок Сериалы / Актёры
+
+#### TMDB API (фаза 8b)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /discover/movie` | каталог с фильтрами |
+| `GET /genre/movie/list` | жанры для dropdown |
+
+| `sort_by` (примеры) | UI |
+|---------------------|-----|
+| `popularity.desc` | По популярности |
+| `primary_release_date.desc` | По дате выхода |
+| `vote_average.desc` | По оценке |
+
+### Фаза 9 — Профиль 2.0
+
+- [ ] Профиль — полноэкранный push (не таб)
+- [ ] **Guest:** экран входа (как сейчас в `login:impl`)
+- [ ] **Authenticated:** имя пользователя, logout
+- [ ] **Избранное** — сетка 2 колонки (тот же `MediaPosterGrid` из `core:ui`)
+- [ ] `GET /account/{account_id}/favorite/movies` — список избранного (как на сайте TMDB)
+- [ ] Клик по избранному → Details; toggle ★ на Details без изменений
+- [ ] Guest: секция избранного скрыта или CTA «Войти»
+
+#### TMDB API (фаза 9)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /account/{account_id}/favorite/movies` | список избранных фильмов |
+
+### Фаза 10 — Сериалы
+
+- [ ] Вкладка **Сериалы** в `MediaComponent` — рабочий каталог
+- [ ] `GET /discover/tv` или `GET /tv/popular` — grid + пагинация
+- [ ] `data:tmdb`: модели `TvShow`, `TvRepository` / методы в `MediaRepository`
+- [ ] `feature:details`: расширение для сериала (`GET /tv/{id}`) — общий каркас с фильмом + сезоны/эпизоды/статус
+- [ ] `feature:search`: `GET /search/tv` при открытии поиска с активной вкладкой Сериалы
+- [ ] Фильтры для TV — отдельная итерация (после 8b, по аналогии с `discover/tv`)
+
+#### TMDB API (фаза 10)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /tv/popular` | каталог сериалов (MVP) |
+| `GET /tv/{series_id}` | детали сериала |
+| `GET /search/tv` | поиск сериалов |
+
+### Фаза 11 — Актёры
+
+- [ ] Вкладка **Актёры** в `MediaComponent` — рабочий каталог
+- [ ] `GET /person/popular` — grid (круглое фото + имя), пагинация
+- [ ] `feature:person:api/impl` — экран актёра (`GET /person/{id}`, filmography)
+- [ ] `feature:search`: `GET /search/person`
+- [ ] Push `PersonComponent` из media/search (отдельно от movie Details)
+- [ ] FAB фильтров на вкладке Актёры — не в MVP (или только сортировка позже)
+
+#### TMDB API (фаза 11)
+
+| Endpoint | Назначение |
+|----------|------------|
+| `GET /person/popular` | каталог актёров |
+| `GET /person/{person_id}` | карточка актёра |
+| `GET /search/person` | поиск актёров |
+
 ---
 
 ## Зафиксированные решения
@@ -459,8 +602,13 @@ modules(
 | Auth | Мягкая сессия Guest/Authenticated; Root всегда Main |
 | Auth-модуль | Session, login flow, logout — не UI логина |
 | Browse без login | Да, через API Read Access Token (v4 Bearer) |
-| Main | Тонкий shell, табы = отдельные feature-модули |
-| Первая фича | `feature:discover` — popular movies |
+| Main | Тонкий shell; фаза 8+: media + push search/profile |
+| Каталог (главная) | Один модуль `feature:media` — Movies / Tv / People по `ContentType` |
+| Первая фича | `feature:discover` (фазы 3–7) → `feature:media` (фаза 8+) |
+| Grid главной | 2 колонки, фикс. высота ячейки, постер + название, пагинация |
+| Фильтры | FAB + bottom sheet; MVP: жанр + сортировка (только фильмы, фаза 8b) |
+| Детали | Фильм и сериал — `feature:details`; актёр — `feature:person` |
+| Профиль | Полноэкранный push; избранное — сетка как на главной (фаза 9) |
 | Язык API | `ru-RU` |
 | Gradle | Convention plugins в `build-logic` |
 | Пакет | `pas.tmdb.*` |
