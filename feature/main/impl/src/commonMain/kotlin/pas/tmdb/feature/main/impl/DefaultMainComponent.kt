@@ -3,23 +3,23 @@ package pas.tmdb.feature.main.impl
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.router.stack.StackNavigation
-import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
 import com.arkivanov.decompose.router.stack.push
-import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
 import pas.tmdb.feature.details.api.DetailsComponent
-import pas.tmdb.feature.discover.api.DiscoverComponent
 import pas.tmdb.feature.login.api.LoginComponent
 import pas.tmdb.feature.main.api.MainComponent
-import pas.tmdb.feature.search.api.SearchComponent
+import pas.tmdb.feature.media.api.MediaComponent
 
 class DefaultMainComponent(
     componentContext: ComponentContext,
-    private val discoverComponentFactory: (ComponentContext, (Int) -> Unit) -> DiscoverComponent,
-    private val searchComponentFactory: (ComponentContext, (Int) -> Unit) -> SearchComponent,
+    private val mediaComponentFactory: (
+        ComponentContext,
+        (Int) -> Unit,
+        () -> Unit,
+    ) -> MediaComponent,
     private val loginComponentFactory: (ComponentContext) -> LoginComponent,
     private val detailsComponentFactory: (
         ComponentContext,
@@ -31,37 +31,27 @@ class DefaultMainComponent(
 
     private val navigation = StackNavigation<Config>()
 
-    private val _selectedTab = MutableValue(MainComponent.Tab.Discover)
-
-    override val selectedTab: Value<MainComponent.Tab> = _selectedTab
-
     override val childStack: Value<ChildStack<*, MainComponent.Child>> =
         childStack(
             source = navigation,
             serializer = Config.serializer(),
-            initialConfiguration = Config.Discover,
+            initialConfiguration = Config.Media,
             handleBackButton = true,
             childFactory = ::child,
         )
 
-    override fun onTabSelected(tab: MainComponent.Tab) {
-        val config = tab.toConfig()
-        navigation.bringToFront(config)
-        _selectedTab.value = tab
+    override fun onBack() {
+        navigation.pop()
     }
 
     private fun child(config: Config, childContext: ComponentContext): MainComponent.Child =
         when (config) {
-            Config.Discover -> MainComponent.Child.Discover(
-                discoverComponentFactory(childContext) { movieId ->
-                    onMovieClick(movieId)
-                },
-            )
-
-            Config.Search -> MainComponent.Child.Search(
-                searchComponentFactory(childContext) { movieId ->
-                    onMovieClick(movieId)
-                },
+            Config.Media -> MainComponent.Child.Media(
+                mediaComponentFactory(
+                    childContext,
+                    { movieId -> onMovieClick(movieId) },
+                    { navigation.push(Config.Profile) },
+                ),
             )
 
             Config.Profile -> MainComponent.Child.Profile(
@@ -84,16 +74,13 @@ class DefaultMainComponent(
 
     private fun onNavigateToLogin() {
         navigation.pop()
-        onTabSelected(MainComponent.Tab.Profile)
+        navigation.push(Config.Profile)
     }
 
     @Serializable
     private sealed interface Config {
         @Serializable
-        data object Discover : Config
-
-        @Serializable
-        data object Search : Config
+        data object Media : Config
 
         @Serializable
         data object Profile : Config
@@ -101,11 +88,4 @@ class DefaultMainComponent(
         @Serializable
         data class Details(val movieId: Int) : Config
     }
-
-    private fun MainComponent.Tab.toConfig(): Config =
-        when (this) {
-            MainComponent.Tab.Discover -> Config.Discover
-            MainComponent.Tab.Search -> Config.Search
-            MainComponent.Tab.Profile -> Config.Profile
-        }
 }
