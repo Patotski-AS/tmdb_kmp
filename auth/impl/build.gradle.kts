@@ -26,5 +26,9 @@ kotlin {
                 implementation(libs.ktor.client.cio)
             }
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }

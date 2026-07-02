@@ -105,7 +105,7 @@ Auth — **не экран логина**, а инфраструктура се�
 
 ### Модель сессии (мягкая, без зон Root)
 
-Каталог (popular, details, search) работает с **API key** в режиме `Guest`.
+Каталог (popular, details, search) работает с **API Read Access Token** (v4 Bearer) в режиме `Guest`.
 User session нужна только для account-фич (favorites, watchlist, рейтинги).
 
 **Root всегда показывает `MainComponent`** — без переключения Unauthorized ↔ Authorized.
@@ -213,10 +213,10 @@ Ktor interceptor при 401 на account-запросах:
 
 | Слой | Роль |
 |------|------|
-| `config:impl` | API key / read token (не в git) |
+| `config:impl` | API Read Access Token (не в git) |
 | `storage:impl` | persist: session_id, accountId, username |
 | `auth:impl` | session lifecycle, logout, `SessionState` |
-| `tmdb:impl` | API key из `TmdbConfig`; session_id через `SessionRepository` |
+| `tmdb:impl` | Bearer token из `TmdbConfig`; session_id через `SessionRepository` |
 
 ### Скрытие account-фич
 
@@ -330,28 +330,18 @@ Label из discover: `NavigateToDetails(movieId)` → push в child stack `main-
 
 1. Зарегистрировать приложение на [developer.themoviedb.org](https://developer.themoviedb.org/).
 2. Ключ хранить в `local.properties` — **не коммитить** в git.
-3. `config:impl` читает значение в generated constant / expect-actual.
+3. `config:impl` читает значение в generated constant.
 
-### Сейчас (фаза 2)
+### Сейчас (фаза 7+)
 
-- Используется **Ключ API** (v3): query-параметр `api_key` в `TmdbApiClient`.
+- Используется **Ключ доступа к API** (v4): заголовок `Authorization: Bearer <token>` в `HttpClient`.
 - В `local.properties`:
 
 ```properties
-TMDB_API_KEY=your_v3_api_key_here
-```
-
-### План: перейти на Ключ доступа к API
-
-- Целевой способ — **API Read Access Token** (v4): заголовок `Authorization: Bearer <token>`.
-- Единый механизм auth для v3/v4 эндпоинтов; ключ не попадает в URL.
-- Изменения: `TmdbConfig` → bearer token, `HttpClient` default request / `TmdbApiClient` — убрать `parameter("api_key", ...)`.
-- Задача зафиксирована в **фазе 7** (можно выполнить раньше, до auth).
-
-```properties
-# целевое имя свойства (после миграции)
 TMDB_ACCESS_TOKEN=your_v4_read_access_token_here
 ```
+
+- Fallback при генерации: если `TMDB_ACCESS_TOKEN` не задан, читается `TMDB_API_KEY` (для обратной совместимости; v3-ключ **не** работает как Bearer — нужен v4 token).
 
 ---
 
@@ -447,12 +437,14 @@ modules(
 | `GET /movie/{id}/account_states` | isFavorite |
 | `POST /account/{id}/favorite` | add/remove favorite |
 
-### Фаза 7 — Полировка
-- iOS + Desktop: platform launchers (Custom Tabs, ASWebAuthenticationSession, OAuth callback)
-- iOS + Desktop: persistent encrypted session storage (Keychain / encrypted file)
-- Shimmer, улучшение error states
-- **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
-- Тесты: `DiscoverStore`, `SessionManager` с fakes
+### Фаза 7 — Полировка ✅
+
+- [x] Android: Custom Tabs; iOS: SFSafariViewController; Desktop: `Desktop.browse()`
+- [x] iOS: persistent session storage (Keychain)
+- [x] Desktop: persistent encrypted session storage (AES-GCM file)
+- [x] Shimmer, улучшение error states (`core:ui`)
+- [x] **Миграция на Ключ доступа к API** (v4 Bearer вместо `api_key` query param)
+- [x] Тесты: `DiscoverStore`, `SessionManager` с fakes
 
 ---
 
@@ -466,7 +458,7 @@ modules(
 | Структура модулей | `:layer:name:api` / `:layer:name:impl` |
 | Auth | Мягкая сессия Guest/Authenticated; Root всегда Main |
 | Auth-модуль | Session, login flow, logout — не UI логина |
-| Browse без login | Да, через API key (v3 сейчас; v4 Bearer — см. фазу 7) |
+| Browse без login | Да, через API Read Access Token (v4 Bearer) |
 | Main | Тонкий shell, табы = отдельные feature-модули |
 | Первая фича | `feature:discover` — popular movies |
 | Язык API | `ru-RU` |

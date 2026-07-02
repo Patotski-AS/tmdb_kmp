@@ -12,5 +12,12 @@ kotlin {
             implementation(projects.core.ui)
             implementation(libs.coil.compose)
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.mvikotlin)
+            implementation(libs.mvikotlin.main)
+            implementation(libs.mvikotlin.coroutines)
+        }
     }
 }

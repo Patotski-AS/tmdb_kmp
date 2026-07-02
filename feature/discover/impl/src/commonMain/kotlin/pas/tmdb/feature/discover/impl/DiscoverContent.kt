@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import pas.tmdb.core.ui.ShimmerMovieList
+import pas.tmdb.core.ui.TmdbErrorState
+import pas.tmdb.core.ui.TmdbMessageState
 import pas.tmdb.feature.discover.api.DiscoverComponent
 import pas.tmdb.feature.discover.api.DiscoverIntent
 import pas.tmdb.feature.discover.api.MovieItemModel
@@ -47,11 +49,11 @@ fun DiscoverContent(
 
     when {
         model.isLoading && model.movies.isEmpty() -> {
-            LoadingState(modifier = modifier)
+            ShimmerMovieList(modifier = modifier)
         }
 
         model.error != null && model.movies.isEmpty() -> {
-            ErrorState(
+            TmdbErrorState(
                 message = model.error.orEmpty(),
                 onRetry = { component.onIntent(DiscoverIntent.Load) },
                 modifier = modifier,
@@ -59,7 +61,10 @@ fun DiscoverContent(
         }
 
         model.movies.isEmpty() -> {
-            EmptyState(modifier = modifier)
+            TmdbMessageState(
+                message = "Фильмы не найдены",
+                modifier = modifier,
+            )
         }
 
         else -> {
@@ -189,51 +194,3 @@ private fun MovieCard(
     }
 }
 
-@Composable
-private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = "Фильмы не найдены",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Button(
-            onClick = onRetry,
-            modifier = Modifier.padding(top = 16.dp),
-        ) {
-            Text("Повторить")
-        }
-    }
-}

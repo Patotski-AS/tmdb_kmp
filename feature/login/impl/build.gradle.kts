@@ -10,5 +10,8 @@ kotlin {
             implementation(projects.core.common)
             implementation(projects.core.ui)
         }
+        androidMain.dependencies {
+            implementation(libs.androidx.browser)
+        }
     }
 }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
@@ -28,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.auth.api.SessionState
+import pas.tmdb.core.ui.ShimmerDetails
+import pas.tmdb.core.ui.TmdbErrorState
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsIntent
 
@@ -68,11 +69,11 @@ fun DetailsContent(
     ) { padding ->
         when {
             model.isLoading && model.title == null -> {
-                LoadingState(modifier = Modifier.fillMaxSize().padding(padding))
+                ShimmerDetails(modifier = Modifier.fillMaxSize().padding(padding))
             }
 
             model.error != null && model.title == null -> {
-                ErrorState(
+                TmdbErrorState(
                     message = model.error.orEmpty(),
                     onRetry = { component.onIntent(DetailsIntent.Retry) },
                     modifier = Modifier.fillMaxSize().padding(padding),
@@ -156,39 +157,6 @@ private fun DetailsBody(
     }
 }
 
-@Composable
-private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Button(
-            onClick = onRetry,
-            modifier = Modifier.padding(top = 16.dp),
-        ) {
-            Text("Повторить")
-        }
-    }
-}
 
 private fun formatRuntime(minutes: Int): String {
     val hours = minutes / 60

@@ -17,14 +17,12 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -39,13 +37,8 @@ fun LoginContent(
     modifier: Modifier = Modifier,
 ) {
     val model by component.model.subscribeAsState()
-    val uriHandler = LocalUriHandler.current
 
-    LaunchedEffect(component) {
-        component.browserUrlEvents.collect { url ->
-            uriHandler.openUri(url)
-        }
-    }
+    PlatformBrowserEffect(component)
 
     Box(
         modifier = modifier.fillMaxSize(),
