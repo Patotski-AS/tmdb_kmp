@@ -1,5 +1,6 @@
 package pas.tmdb.feature.details.impl.store
 
+import pas.tmdb.auth.api.SessionState
 import pas.tmdb.feature.details.api.DetailsModel
 
 data class DetailsState(
@@ -7,4 +8,7 @@ data class DetailsState(
     val details: DetailsModel = DetailsModel(),
     val isLoading: Boolean = false,
     val error: String? = null,
+    val sessionState: SessionState = SessionState.Guest,
+    val isFavorite: Boolean? = null,
+    val isFavoriteLoading: Boolean = false,
 )

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import pas.tmdb.auth.api.SessionState
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsIntent
 
@@ -53,6 +54,14 @@ fun DetailsContent(
                     TextButton(onClick = { component.onIntent(DetailsIntent.Back) }) {
                         Text("←")
                     }
+                },
+                actions = {
+                    FavoriteAction(
+                        sessionState = model.sessionState,
+                        isFavorite = model.isFavorite,
+                        isFavoriteLoading = model.isFavoriteLoading,
+                        onToggleFavorite = { component.onIntent(DetailsIntent.ToggleFavorite) },
+                    )
                 },
             )
         },
@@ -188,5 +197,36 @@ private fun formatRuntime(minutes: Int): String {
         hours > 0 && mins > 0 -> "$hours ч $mins мин"
         hours > 0 -> "$hours ч"
         else -> "$mins мин"
+    }
+}
+
+@Composable
+private fun FavoriteAction(
+    sessionState: SessionState,
+    isFavorite: Boolean?,
+    isFavoriteLoading: Boolean,
+    onToggleFavorite: () -> Unit,
+) {
+    when (sessionState) {
+        is SessionState.Guest -> {
+            TextButton(onClick = onToggleFavorite) {
+                Text("Войти")
+            }
+        }
+
+        is SessionState.Authenticated -> {
+            TextButton(
+                onClick = onToggleFavorite,
+                enabled = !isFavoriteLoading,
+            ) {
+                Text(
+                    text = when (isFavorite) {
+                        true -> "★ В избранном"
+                        false -> "☆ В избранное"
+                        null -> if (isFavoriteLoading) "…" else "☆ В избранное"
+                    },
+                )
+            }
+        }
     }
 }

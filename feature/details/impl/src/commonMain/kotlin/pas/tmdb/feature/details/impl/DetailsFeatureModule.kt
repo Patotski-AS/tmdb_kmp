@@ -6,13 +6,26 @@ import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.impl.store.DetailsStoreFactory
 
 val detailsFeatureModule = module {
-    factory { DetailsStoreFactory(storeFactory = get(), movieRepository = get()) }
-    factory<DetailsComponent> { (componentContext: ComponentContext, movieId: Int, onBack: () -> Unit) ->
+    factory {
+        DetailsStoreFactory(
+            storeFactory = get(),
+            movieRepository = get(),
+            accountRepository = get(),
+            sessionRepository = get(),
+        )
+    }
+    factory<DetailsComponent> { (
+        componentContext: ComponentContext,
+        movieId: Int,
+        onBack: () -> Unit,
+        onNavigateToLogin: () -> Unit,
+    ) ->
         DefaultDetailsComponent(
             componentContext = componentContext,
             movieId = movieId,
             storeFactory = get(),
             onBack = onBack,
+            onNavigateToLogin = onNavigateToLogin,
         )
     }
 }

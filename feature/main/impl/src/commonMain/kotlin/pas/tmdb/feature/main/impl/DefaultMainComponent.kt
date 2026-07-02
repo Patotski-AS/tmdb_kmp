@@ -12,6 +12,7 @@ import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.discover.api.DiscoverComponent
+import pas.tmdb.feature.login.api.LoginComponent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.search.api.SearchComponent
 
@@ -19,7 +20,13 @@ class DefaultMainComponent(
     componentContext: ComponentContext,
     private val discoverComponentFactory: (ComponentContext, (Int) -> Unit) -> DiscoverComponent,
     private val searchComponentFactory: (ComponentContext, (Int) -> Unit) -> SearchComponent,
-    private val detailsComponentFactory: (ComponentContext, Int, () -> Unit) -> DetailsComponent,
+    private val loginComponentFactory: (ComponentContext) -> LoginComponent,
+    private val detailsComponentFactory: (
+        ComponentContext,
+        Int,
+        () -> Unit,
+        () -> Unit,
+    ) -> DetailsComponent,
 ) : MainComponent, ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -57,15 +64,27 @@ class DefaultMainComponent(
                 },
             )
 
+            Config.Profile -> MainComponent.Child.Profile(
+                loginComponentFactory(childContext),
+            )
+
             is Config.Details -> MainComponent.Child.Details(
-                detailsComponentFactory(childContext, config.movieId) {
-                    navigation.pop()
-                },
+                detailsComponentFactory(
+                    childContext,
+                    config.movieId,
+                    { navigation.pop() },
+                    { onNavigateToLogin() },
+                ),
             )
         }
 
     private fun onMovieClick(movieId: Int) {
         navigation.push(Config.Details(movieId))
+    }
+
+    private fun onNavigateToLogin() {
+        navigation.pop()
+        onTabSelected(MainComponent.Tab.Profile)
     }
 
     @Serializable
@@ -77,6 +96,9 @@ class DefaultMainComponent(
         data object Search : Config
 
         @Serializable
+        data object Profile : Config
+
+        @Serializable
         data class Details(val movieId: Int) : Config
     }
 
@@ -84,5 +106,6 @@ class DefaultMainComponent(
         when (this) {
             MainComponent.Tab.Discover -> Config.Discover
             MainComponent.Tab.Search -> Config.Search
+            MainComponent.Tab.Profile -> Config.Profile
         }
 }

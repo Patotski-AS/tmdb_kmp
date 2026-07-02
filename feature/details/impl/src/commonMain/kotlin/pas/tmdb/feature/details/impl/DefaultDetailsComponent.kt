@@ -23,6 +23,7 @@ internal class DefaultDetailsComponent(
     movieId: Int,
     storeFactory: DetailsStoreFactory,
     private val onBack: () -> Unit,
+    private val onNavigateToLogin: () -> Unit,
 ) : DetailsComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -43,6 +44,8 @@ internal class DefaultDetailsComponent(
             store.labels.collect { label ->
                 when (label) {
                     DetailsLabel.NavigateBack -> onBack()
+                    DetailsLabel.NavigateToLogin -> onNavigateToLogin()
+                    is DetailsLabel.ShowError -> Unit
                 }
             }
         }
@@ -59,10 +62,19 @@ internal class DefaultDetailsComponent(
 
 private fun DetailsState.toModel(): DetailsModel =
     if (details.title != null) {
-        details.copy(isLoading = isLoading, error = error)
+        details.copy(
+            isLoading = isLoading,
+            error = error,
+            sessionState = sessionState,
+            isFavorite = isFavorite,
+            isFavoriteLoading = isFavoriteLoading,
+        )
     } else {
         DetailsModel(
             isLoading = isLoading,
             error = error,
+            sessionState = sessionState,
+            isFavorite = isFavorite,
+            isFavoriteLoading = isFavoriteLoading,
         )
     }

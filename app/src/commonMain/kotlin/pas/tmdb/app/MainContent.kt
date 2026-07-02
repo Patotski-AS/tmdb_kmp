@@ -15,6 +15,7 @@ import com.arkivanov.decompose.extensions.compose.stack.Children
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.feature.details.impl.DetailsContent
 import pas.tmdb.feature.discover.impl.DiscoverContent
+import pas.tmdb.feature.login.impl.LoginContent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.search.impl.SearchContent
 
@@ -38,6 +39,7 @@ fun MainContent(
 
         is MainComponent.Child.Discover,
         is MainComponent.Child.Search,
+        is MainComponent.Child.Profile,
         -> {
             Scaffold(
                 modifier = modifier,
@@ -58,6 +60,12 @@ fun MainContent(
                             icon = { Text("🔍") },
                             label = { Text("Поиск") },
                         )
+                        NavigationBarItem(
+                            selected = selectedTab == MainComponent.Tab.Profile,
+                            onClick = { component.onTabSelected(MainComponent.Tab.Profile) },
+                            icon = { Text("👤") },
+                            label = { Text("Профиль") },
+                        )
                     }
                 },
             ) { padding ->
@@ -68,6 +76,7 @@ fun MainContent(
                     when (val instance = child.instance) {
                         is MainComponent.Child.Discover -> DiscoverContent(component = instance.component)
                         is MainComponent.Child.Search -> SearchContent(component = instance.component)
+                        is MainComponent.Child.Profile -> LoginContent(component = instance.component)
                         is MainComponent.Child.Details -> Unit
                     }
                 }

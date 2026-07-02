@@ -5,11 +5,17 @@ import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.JsonConvertException
 import pas.tmdb.data.config.api.TmdbConfig
 import pas.tmdb.data.tmdb.impl.dto.ConfigurationResponseDto
+import pas.tmdb.data.tmdb.impl.dto.FavoriteRequestDto
+import pas.tmdb.data.tmdb.impl.dto.MovieAccountStatesDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
 import pas.tmdb.data.tmdb.impl.dto.TmdbErrorResponseDto
@@ -39,6 +45,35 @@ internal class TmdbApiClient(
 
     suspend fun getConfiguration(): ConfigurationResponseDto =
         tmdbGet("${config.baseUrl}configuration")
+
+    suspend fun getMovieAccountStates(movieId: Int, sessionId: String): MovieAccountStatesDto =
+        tmdbGet("${config.baseUrl}movie/$movieId/account_states") {
+            parameter("session_id", sessionId)
+        }
+
+    suspend fun setFavorite(
+        accountId: Int,
+        movieId: Int,
+        favorite: Boolean,
+        sessionId: String,
+    ) {
+        ensureApiKeyConfigured()
+        val response = httpClient.post("${config.baseUrl}account/$accountId/favorite") {
+            parameter("api_key", config.apiKey)
+            parameter("session_id", sessionId)
+            contentType(ContentType.Application.Json)
+            setBody(
+                FavoriteRequestDto(
+                    mediaType = "movie",
+                    mediaId = movieId,
+                    favorite = favorite,
+                ),
+            )
+        }
+        if (!response.status.isSuccess()) {
+            throw response.parseTmdbError()
+        }
+    }
 
     private suspend inline fun <reified T> tmdbGet(
         url: String,
@@ -80,7 +115,7 @@ internal class TmdbApiClient(
         val error = runCatching { body<TmdbErrorResponseDto>() }.getOrNull()
         val message = error?.statusMessage?.takeIf { it.isNotBlank() }
             ?: "TMDB request failed (HTTP ${status.value})"
-        return TmdbApiException(message)
+        return TmdbApiException(message, httpStatusCode = status.value)
     }
 
     private companion object {

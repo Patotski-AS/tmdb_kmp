@@ -5,6 +5,7 @@ import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.discover.api.DiscoverComponent
+import pas.tmdb.feature.login.api.LoginComponent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.search.api.SearchComponent
 
@@ -18,8 +19,11 @@ val mainFeatureModule = module {
             searchComponentFactory = { childContext, onNavigateToDetails ->
                 get<SearchComponent> { parametersOf(childContext, onNavigateToDetails) }
             },
-            detailsComponentFactory = { childContext, movieId, onBack ->
-                get<DetailsComponent> { parametersOf(childContext, movieId, onBack) }
+            loginComponentFactory = { childContext ->
+                get<LoginComponent> { parametersOf(childContext) }
+            },
+            detailsComponentFactory = { childContext, movieId, onBack, onNavigateToLogin ->
+                get<DetailsComponent> { parametersOf(childContext, movieId, onBack, onNavigateToLogin) }
             },
         )
     }
