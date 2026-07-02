@@ -28,9 +28,8 @@ internal class TmdbSessionClientImpl(
 
     override suspend fun createRequestToken(): AppResult<String> =
         runCatchingAppResult {
-            val response = httpClient.get("${config.baseUrl}authentication/token/new") {
-                parameter("api_key", config.apiKey)
-            }.parseBody<RequestTokenResponseDto>()
+            val response = httpClient.get("${config.baseUrl}authentication/token/new")
+                .parseBody<RequestTokenResponseDto>()
 
             if (!response.success || response.requestToken.isNullOrBlank()) {
                 throw AuthApiException("Не удалось получить request token")
@@ -41,7 +40,6 @@ internal class TmdbSessionClientImpl(
     override suspend fun createSession(requestToken: String): AppResult<String> =
         runCatchingAppResult {
             val response = httpClient.post("${config.baseUrl}authentication/session/new") {
-                parameter("api_key", config.apiKey)
                 contentType(ContentType.Application.Json)
                 setBody(SessionRequestDto(requestToken = requestToken))
             }.parseBody<SessionResponseDto>()
@@ -59,7 +57,6 @@ internal class TmdbSessionClientImpl(
     ): AppResult<String> =
         runCatchingAppResult {
             val response = httpClient.post("${config.baseUrl}authentication/token/validate_with_login") {
-                parameter("api_key", config.apiKey)
                 contentType(ContentType.Application.Json)
                 setBody(
                     ValidateWithLoginRequestDto(
@@ -114,7 +111,6 @@ internal class TmdbSessionClientImpl(
     override suspend fun getAccount(sessionId: String): AppResult<TmdbAccountInfo> =
         runCatchingAppResult {
             val response = httpClient.get("${config.baseUrl}account") {
-                parameter("api_key", config.apiKey)
                 parameter("session_id", sessionId)
             }.parseBody<AccountResponseDto>()
 

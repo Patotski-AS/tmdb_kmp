@@ -33,6 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
+import pas.tmdb.core.ui.ShimmerMovieList
+import pas.tmdb.core.ui.TmdbErrorState
+import pas.tmdb.core.ui.TmdbMessageState
 import pas.tmdb.feature.search.api.MovieItemModel
 import pas.tmdb.feature.search.api.SearchComponent
 import pas.tmdb.feature.search.api.SearchIntent
@@ -57,19 +60,22 @@ fun SearchContent(
         Box(modifier = Modifier.fillMaxSize()) {
             when {
                 model.isLoading && model.movies.isEmpty() -> {
-                    LoadingState()
+                    ShimmerMovieList()
                 }
 
                 model.error != null && model.movies.isEmpty() -> {
-                    MessageState(text = model.error.orEmpty())
+                    TmdbErrorState(
+                        message = model.error.orEmpty(),
+                        onRetry = { component.onIntent(SearchIntent.QueryChanged(model.query)) },
+                    )
                 }
 
                 !model.hasSearched && model.movies.isEmpty() -> {
-                    MessageState(text = "Введите название фильма")
+                    TmdbMessageState(message = "Введите название фильма")
                 }
 
                 model.hasSearched && model.movies.isEmpty() && !model.isLoading -> {
-                    MessageState(text = "Ничего не найдено")
+                    TmdbMessageState(message = "Ничего не найдено")
                 }
 
                 else -> {
@@ -213,30 +219,3 @@ private fun MovieCard(
     }
 }
 
-@Composable
-private fun LoadingState(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircularProgressIndicator()
-    }
-}
-
-@Composable
-private fun MessageState(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}

@@ -57,9 +57,8 @@ internal class TmdbApiClient(
         favorite: Boolean,
         sessionId: String,
     ) {
-        ensureApiKeyConfigured()
+        ensureAccessTokenConfigured()
         val response = httpClient.post("${config.baseUrl}account/$accountId/favorite") {
-            parameter("api_key", config.apiKey)
             parameter("session_id", sessionId)
             contentType(ContentType.Application.Json)
             setBody(
@@ -79,19 +78,18 @@ internal class TmdbApiClient(
         url: String,
         block: HttpRequestBuilder.() -> Unit = {},
     ): T {
-        ensureApiKeyConfigured()
+        ensureAccessTokenConfigured()
         val response = httpClient.get(url) {
-            parameter("api_key", config.apiKey)
             block()
         }
         return response.parseTmdbBody()
     }
 
-    private fun ensureApiKeyConfigured() {
-        val apiKey = config.apiKey
-        if (apiKey.isBlank() || apiKey == PLACEHOLDER_API_KEY) {
+    private fun ensureAccessTokenConfigured() {
+        val accessToken = config.accessToken
+        if (accessToken.isBlank() || accessToken == PLACEHOLDER_ACCESS_TOKEN) {
             throw TmdbApiException(
-                "TMDB_API_KEY не настроен. Укажите ключ API (v3) в local.properties и пересоберите проект.",
+                "TMDB_ACCESS_TOKEN не настроен. Укажите Ключ доступа к API (v4) в local.properties и пересоберите проект.",
             )
         }
     }
@@ -105,7 +103,7 @@ internal class TmdbApiClient(
             body()
         } catch (e: JsonConvertException) {
             throw TmdbApiException(
-                message = "Неверный ответ TMDB. Проверьте TMDB_API_KEY в local.properties.",
+                message = "Неверный ответ TMDB. Проверьте TMDB_ACCESS_TOKEN в local.properties.",
                 cause = e,
             )
         }
@@ -120,6 +118,6 @@ internal class TmdbApiClient(
 
     private companion object {
         const val LANGUAGE: String = "ru-RU"
-        const val PLACEHOLDER_API_KEY: String = "your_api_key_here"
+        const val PLACEHOLDER_ACCESS_TOKEN: String = "your_access_token_here"
     }
 }
