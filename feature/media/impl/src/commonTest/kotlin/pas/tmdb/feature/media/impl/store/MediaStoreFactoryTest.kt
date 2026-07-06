@@ -58,6 +58,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         val state = store.states
@@ -80,6 +81,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         val state = store.states
@@ -97,6 +99,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
@@ -136,6 +139,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
@@ -177,6 +181,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
@@ -199,6 +204,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
@@ -226,6 +232,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         val state = store.states
@@ -261,6 +268,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
         ).create()
 
         store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
@@ -279,4 +287,12 @@ class MediaStoreFactoryTest {
         assertEquals(1, movieRepository.discoverCalls)
         assertEquals("vote_average.desc", movieRepository.lastDiscoverSortBy)
     }
+}
+
+private class FakeSessionRepository : pas.tmdb.auth.api.SessionRepository {
+    override val sessionState = kotlinx.coroutines.flow.MutableStateFlow(pas.tmdb.auth.api.SessionState.Guest)
+
+    override suspend fun getSessionId(): String? = null
+
+    override suspend fun logout() = Unit
 }

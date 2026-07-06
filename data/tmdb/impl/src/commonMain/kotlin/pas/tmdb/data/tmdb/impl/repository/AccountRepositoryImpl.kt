@@ -5,6 +5,9 @@ import pas.tmdb.auth.api.SessionState
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.AccountRepository
 import pas.tmdb.data.tmdb.api.FavoriteMoviesCache
+import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.model.Movie
+import pas.tmdb.data.tmdb.impl.mapper.toDomain
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiClient
 import pas.tmdb.data.tmdb.impl.remote.TmdbApiException
 
@@ -12,6 +15,7 @@ internal class AccountRepositoryImpl(
     private val apiClient: TmdbApiClient,
     private val sessionRepository: SessionRepository,
     private val favoriteMoviesCache: FavoriteMoviesCache,
+    private val movieRepository: MovieRepository,
 ) : AccountRepository {
 
     override suspend fun isFavorite(movieId: Int): AppResult<Boolean> =
@@ -51,6 +55,30 @@ internal class AccountRepositoryImpl(
             } while (page <= totalPages)
             ids
         }
+
+    override suspend fun getFavoriteMovies(): AppResult<List<Movie>> {
+        val imageConfiguration = when (val config = movieRepository.getImageConfiguration()) {
+            is AppResult.Success -> config.value
+            is AppResult.Error -> return config
+        }
+
+        return withAuthenticatedSession { sessionId, accountId ->
+            val movies = mutableListOf<Movie>()
+            var page = 1
+            var totalPages = 1
+            do {
+                val response = apiClient.getFavoriteMovies(
+                    accountId = accountId,
+                    sessionId = sessionId,
+                    page = page,
+                )
+                movies.addAll(response.toDomain(imageConfiguration).movies)
+                totalPages = response.totalPages
+                page++
+            } while (page <= totalPages)
+            movies
+        }
+    }
 
     private suspend inline fun <T> withAuthenticatedSession(
         block: (sessionId: String, accountId: Int) -> T,

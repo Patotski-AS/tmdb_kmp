@@ -11,7 +11,11 @@ import pas.tmdb.auth.api.SessionRepository
 import pas.tmdb.auth.api.SessionState
 import pas.tmdb.auth.api.TmdbSessionClient
 import pas.tmdb.core.common.AppResult
+import pas.tmdb.data.tmdb.api.AccountRepository
+import pas.tmdb.data.tmdb.api.model.Movie
+import pas.tmdb.feature.login.api.FavoriteMovieModel
 import pas.tmdb.feature.login.api.LoginIntent
+import pas.tmdb.feature.login.api.ProfileMenuItem
 
 interface LoginStore : Store<LoginIntent, LoginState, LoginLabel>
 
@@ -20,6 +24,7 @@ class LoginStoreFactory(
     private val sessionClient: TmdbSessionClient,
     private val sessionRepository: SessionRepository,
     private val authResultHandler: AuthResultHandler,
+    private val accountRepository: AccountRepository,
 ) {
     fun create(): LoginStore =
         object : LoginStore, Store<LoginIntent, LoginState, LoginLabel> by storeFactory.create(
@@ -31,6 +36,7 @@ class LoginStoreFactory(
                     sessionClient = sessionClient,
                     sessionRepository = sessionRepository,
                     authResultHandler = authResultHandler,
+                    accountRepository = accountRepository,
                 )
             },
             reducer = ReducerImpl,
@@ -52,11 +58,12 @@ class LoginStoreFactory(
         private val sessionClient: TmdbSessionClient,
         private val sessionRepository: SessionRepository,
         private val authResultHandler: AuthResultHandler,
+        private val accountRepository: AccountRepository,
     ) : CoroutineExecutor<LoginIntent, Action, LoginState, Message, LoginLabel>() {
 
         override fun executeAction(action: Action) {
             when (action) {
-                is Action.SessionChanged -> dispatch(Message.SessionChanged(action.sessionState))
+                is Action.SessionChanged -> onSessionChanged(action.sessionState)
             }
         }
 
@@ -71,8 +78,65 @@ class LoginStoreFactory(
                 LoginIntent.CancelApproval -> cancelApproval()
                 LoginIntent.Logout -> logout()
                 LoginIntent.DismissError -> dispatch(Message.ErrorChanged(error = null))
+                LoginIntent.RefreshFavorites -> loadFavorites()
+                is LoginIntent.OnFavoriteClick -> publish(LoginLabel.NavigateToDetails(intent.movieId))
+                is LoginIntent.OnMenuItemClick -> publish(LoginLabel.NavigateToSection(intent.item))
+                LoginIntent.OnViewProfileClick -> openProfilePage()
+                is LoginIntent.ScreenOpened -> onScreenOpened(intent.item)
+                is LoginIntent.OpenOnWebsite -> openOnWebsite(intent.item)
             }
         }
+
+        private fun onScreenOpened(item: ProfileMenuItem) {
+            if (item == ProfileMenuItem.Favorites) {
+                loadFavorites()
+            }
+        }
+
+        private fun openOnWebsite(item: ProfileMenuItem) {
+            if (item == ProfileMenuItem.Favorites) return
+            val username = authenticatedUsername() ?: return
+            val url = "$TMDB_PROFILE_BASE$username${item.pathSuffix}"
+            publish(LoginLabel.OpenBrowser(url))
+        }
+
+        private fun onSessionChanged(sessionState: SessionState) {
+            val wasAuthenticated = state().sessionState is SessionState.Authenticated
+            dispatch(Message.SessionChanged(sessionState))
+            when (sessionState) {
+                is SessionState.Authenticated -> if (!wasAuthenticated) loadFavorites()
+                SessionState.Guest -> dispatch(Message.FavoritesLoaded(emptyList()))
+            }
+        }
+
+        private fun loadFavorites() {
+            if (state().sessionState !is SessionState.Authenticated) return
+
+            scope.launch {
+                dispatch(Message.FavoritesLoadingChanged(isLoading = true))
+                dispatch(Message.FavoritesErrorChanged(error = null))
+
+                when (val result = accountRepository.getFavoriteMovies()) {
+                    is AppResult.Success ->
+                        dispatch(Message.FavoritesLoaded(result.value.map(Movie::toFavoriteModel)))
+
+                    is AppResult.Error ->
+                        dispatch(Message.FavoritesErrorChanged(error = result.message))
+                }
+
+                dispatch(Message.FavoritesLoadingChanged(isLoading = false))
+            }
+        }
+
+        private fun openProfilePage() {
+            val username = authenticatedUsername() ?: return
+            publish(LoginLabel.OpenBrowser("$TMDB_PROFILE_BASE$username"))
+        }
+
+        private fun authenticatedUsername(): String? =
+            (state().sessionState as? SessionState.Authenticated)
+                ?.username
+                ?.takeIf { it.isNotBlank() }
 
         private fun startLogin() {
             if (state().isLoading || state().isAwaitingApproval) return
@@ -188,6 +252,9 @@ class LoginStoreFactory(
                 isAwaitingApproval = msg.isAwaitingApproval,
                 pendingRequestToken = msg.requestToken,
             )
+            is Message.FavoritesLoaded -> copy(favorites = msg.favorites)
+            is Message.FavoritesLoadingChanged -> copy(isFavoritesLoading = msg.isLoading)
+            is Message.FavoritesErrorChanged -> copy(favoritesError = msg.error)
         }
     }
 
@@ -203,9 +270,34 @@ class LoginStoreFactory(
             val isAwaitingApproval: Boolean,
             val requestToken: String?,
         ) : Message
+        data class FavoritesLoaded(val favorites: List<FavoriteMovieModel>) : Message
+        data class FavoritesLoadingChanged(val isLoading: Boolean) : Message
+        data class FavoritesErrorChanged(val error: String?) : Message
     }
 
     private companion object {
         const val TMDB_AUTHENTICATE_URL: String = "https://www.themoviedb.org/authenticate/"
+        const val TMDB_PROFILE_BASE: String = "https://www.themoviedb.org/u/"
     }
 }
+
+private val ProfileMenuItem.pathSuffix: String
+    get() = when (this) {
+        ProfileMenuItem.Discussions -> "/discussions"
+        ProfileMenuItem.Lists -> "/lists"
+        ProfileMenuItem.Reviews -> "/reviews"
+        ProfileMenuItem.Ratings -> "/ratings"
+        ProfileMenuItem.Watchlist -> "/watchlist"
+        ProfileMenuItem.Favorites -> "/favorites"
+        ProfileMenuItem.ApiSubscription -> "/settings/api"
+        ProfileMenuItem.EditProfile -> "/edit"
+        ProfileMenuItem.Settings -> "/settings"
+    }
+
+private fun Movie.toFavoriteModel(): FavoriteMovieModel =
+    FavoriteMovieModel(
+        id = id,
+        title = title,
+        posterUrl = posterUrl,
+        voteAverage = voteAverage,
+    )

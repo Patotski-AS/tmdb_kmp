@@ -1,6 +1,7 @@
 package pas.tmdb.feature.media.api
 
 import com.arkivanov.decompose.value.Value
+import pas.tmdb.auth.api.SessionState
 
 interface MediaComponent {
     val model: Value<MediaModel>
@@ -18,6 +19,7 @@ data class MediaModel(
     val error: String? = null,
     val endReached: Boolean = false,
     val favoriteIds: Set<Int> = emptySet(),
+    val sessionState: SessionState = SessionState.Guest,
 )
 
 sealed interface MediaIntent {

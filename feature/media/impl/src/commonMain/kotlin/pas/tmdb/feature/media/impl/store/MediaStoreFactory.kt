@@ -8,6 +8,7 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import pas.tmdb.auth.api.SessionRepository
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.FavoriteMoviesCache
 import pas.tmdb.data.tmdb.api.MovieRepository
@@ -26,18 +27,20 @@ class MediaStoreFactory(
     private val storeFactory: StoreFactory,
     private val movieRepository: MovieRepository,
     private val favoriteMoviesCache: FavoriteMoviesCache,
+    private val sessionRepository: SessionRepository,
 ) {
     fun create(): MediaStore =
         object : MediaStore, Store<MediaIntent, MediaState, MediaLabel> by storeFactory.create(
             name = "MediaStore",
             initialState = MediaState(),
-            bootstrapper = BootstrapperImpl(favoriteMoviesCache),
+            bootstrapper = BootstrapperImpl(favoriteMoviesCache, sessionRepository),
             executorFactory = { ExecutorImpl(movieRepository) },
             reducer = ReducerImpl,
         ) {}
 
     private class BootstrapperImpl(
         private val favoriteMoviesCache: FavoriteMoviesCache,
+        private val sessionRepository: SessionRepository,
     ) : CoroutineBootstrapper<Action>() {
         override fun invoke() {
             dispatch(Action.LoadInitial)
@@ -45,6 +48,11 @@ class MediaStoreFactory(
             scope.launch {
                 favoriteMoviesCache.favoriteIds.collect { favoriteIds ->
                     dispatch(Action.FavoriteIdsChanged(favoriteIds))
+                }
+            }
+            scope.launch {
+                sessionRepository.sessionState.collect { sessionState ->
+                    dispatch(Action.SessionChanged(sessionState))
                 }
             }
         }
@@ -61,6 +69,7 @@ class MediaStoreFactory(
                 Action.LoadInitial -> loadInitial()
                 Action.LoadGenres -> loadGenres()
                 is Action.FavoriteIdsChanged -> dispatch(Message.FavoriteIdsChanged(action.favoriteIds))
+                is Action.SessionChanged -> dispatch(Message.SessionChanged(action.sessionState))
             }
         }
 
@@ -236,6 +245,7 @@ class MediaStoreFactory(
             is Message.FiltersChanged -> copy(filters = msg.filters)
             is Message.GenresLoaded -> copy(genres = msg.genres)
             is Message.FavoriteIdsChanged -> copy(favoriteIds = msg.favoriteIds)
+            is Message.SessionChanged -> copy(sessionState = msg.sessionState)
             is Message.ContentTypeChanged -> copy(
                 contentType = msg.contentType,
                 searchQuery = msg.searchQuery,
@@ -259,6 +269,7 @@ class MediaStoreFactory(
         data object LoadInitial : Action
         data object LoadGenres : Action
         data class FavoriteIdsChanged(val favoriteIds: Set<Int>) : Action
+        data class SessionChanged(val sessionState: pas.tmdb.auth.api.SessionState) : Action
     }
 
     private sealed interface Message {
@@ -269,6 +280,7 @@ class MediaStoreFactory(
         data class FiltersChanged(val filters: MediaFilters) : Message
         data class GenresLoaded(val genres: List<MediaGenre>) : Message
         data class FavoriteIdsChanged(val favoriteIds: Set<Int>) : Message
+        data class SessionChanged(val sessionState: pas.tmdb.auth.api.SessionState) : Message
         data class ContentTypeChanged(
             val contentType: ContentType,
             val searchQuery: String,
