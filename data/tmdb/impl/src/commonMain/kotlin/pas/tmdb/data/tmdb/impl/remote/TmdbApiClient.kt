@@ -14,6 +14,7 @@ import io.ktor.http.isSuccess
 import io.ktor.serialization.JsonConvertException
 import pas.tmdb.data.config.api.TmdbConfig
 import pas.tmdb.data.tmdb.impl.dto.ConfigurationResponseDto
+import pas.tmdb.data.tmdb.impl.dto.GenreListResponseDto
 import pas.tmdb.data.tmdb.impl.dto.FavoriteRequestDto
 import pas.tmdb.data.tmdb.impl.dto.MovieAccountStatesDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
@@ -24,6 +25,11 @@ internal class TmdbApiClient(
     private val httpClient: HttpClient,
     private val config: TmdbConfig,
 ) {
+    suspend fun getMovieGenres(): GenreListResponseDto =
+        tmdbGet("${config.baseUrl}genre/movie/list") {
+            parameter("language", LANGUAGE)
+        }
+
     suspend fun getPopularMovies(page: Int): PopularMoviesResponseDto =
         tmdbGet("${config.baseUrl}movie/popular") {
             parameter("language", LANGUAGE)

@@ -2,6 +2,7 @@ package pas.tmdb.feature.media.impl.store
 
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.MovieDetails
@@ -31,12 +32,25 @@ internal class FakeMovieRepository(
     private val discoverMovies: AppResult<PagedMovies> = AppResult.Success(
         PagedMovies(emptyList(), page = 1, totalPages = 0, totalResults = 0),
     ),
+    private val movieGenres: AppResult<List<Genre>> = AppResult.Success(
+        listOf(
+            Genre(id = 18, name = "Драма"),
+            Genre(id = 28, name = "Боевик"),
+        ),
+    ),
 ) : MovieRepository {
     var popularCalls: Int = 0
     var searchCalls: Int = 0
     var discoverCalls: Int = 0
+    var genreCalls: Int = 0
     var lastSearchQuery: String? = null
     var lastDiscoverGenreId: Int? = null
+    var lastDiscoverSortBy: String? = null
+
+    override suspend fun getMovieGenres(): AppResult<List<Genre>> {
+        genreCalls++
+        return movieGenres
+    }
 
     override suspend fun getPopularMovies(page: Int): AppResult<PagedMovies> {
         popularCalls++
@@ -56,6 +70,7 @@ internal class FakeMovieRepository(
     ): AppResult<PagedMovies> {
         discoverCalls++
         lastDiscoverGenreId = genreId
+        lastDiscoverSortBy = sortBy
         return discoverMovies
     }
 

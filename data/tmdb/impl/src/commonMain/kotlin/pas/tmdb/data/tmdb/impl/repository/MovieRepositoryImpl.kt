@@ -2,6 +2,7 @@ package pas.tmdb.data.tmdb.impl.repository
 
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.MovieDetails
 import pas.tmdb.data.tmdb.api.model.PagedMovies
@@ -14,6 +15,11 @@ internal class MovieRepositoryImpl(
 ) : MovieRepository {
 
     private var cachedImageConfiguration: ImageConfiguration? = null
+
+    override suspend fun getMovieGenres(): AppResult<List<Genre>> =
+        runCatchingAppResult {
+            apiClient.getMovieGenres().toDomain()
+        }
 
     override suspend fun getPopularMovies(page: Int): AppResult<PagedMovies> =
         runCatchingAppResult {

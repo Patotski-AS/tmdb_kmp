@@ -11,6 +11,7 @@ data class MediaModel(
     val contentType: ContentType = ContentType.Movies,
     val searchQuery: String = "",
     val filters: MediaFilters = MediaFilters(),
+    val genres: List<MediaGenre> = emptyList(),
     val items: List<MediaItemModel> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -27,5 +28,6 @@ sealed interface MediaIntent {
     data class QueryChanged(val query: String) : MediaIntent
     data object ClearQuery : MediaIntent
     data class ApplyFilters(val filters: MediaFilters) : MediaIntent
+    data object ResetFilters : MediaIntent
     data object OnProfileClick : MediaIntent
 }

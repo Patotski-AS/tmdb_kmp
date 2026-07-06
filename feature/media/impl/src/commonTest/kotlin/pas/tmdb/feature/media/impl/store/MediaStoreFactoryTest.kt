@@ -191,4 +191,92 @@ class MediaStoreFactoryTest {
         assertEquals(1, movieRepository.discoverCalls)
         assertEquals(18, movieRepository.lastDiscoverGenreId)
     }
+
+    @Test
+    fun resetFilters_reloadsPopularMovies() = runTest {
+        val movieRepository = FakeMovieRepository()
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = movieRepository,
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+        ).create()
+
+        store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
+
+        store.accept(MediaIntent.ApplyFilters(MediaFilters(genreId = 18)))
+        store.states
+            .filter { !it.isLoading && it.filters.genreId == 18 }
+            .first()
+
+        store.accept(MediaIntent.ResetFilters)
+
+        val resetState = store.states
+            .filter { !it.isLoading && !it.filters.isActive && it.items.isNotEmpty() }
+            .first()
+
+        assertTrue(resetState.filters.genreId == null)
+        assertTrue(resetState.filters.sortBy == null)
+        assertEquals(2, movieRepository.popularCalls)
+    }
+
+    @Test
+    fun loadGenres_populatesGenreList() = runTest {
+        val movieRepository = FakeMovieRepository()
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = movieRepository,
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+        ).create()
+
+        val state = store.states
+            .filter { it.genres.isNotEmpty() }
+            .first()
+
+        assertEquals(2, state.genres.size)
+        assertEquals("Драма", state.genres.first().name)
+        assertEquals(1, movieRepository.genreCalls)
+    }
+
+    @Test
+    fun applyFilters_withSortBy_usesDiscoverEndpoint() = runTest {
+        val discoverResult = PagedMovies(
+            movies = listOf(
+                Movie(
+                    id = 4,
+                    title = "Sorted Movie",
+                    overview = "",
+                    posterUrl = null,
+                    voteAverage = 9.0,
+                    releaseDate = "2021",
+                ),
+            ),
+            page = 1,
+            totalPages = 1,
+            totalResults = 1,
+        )
+        val movieRepository = FakeMovieRepository(
+            discoverMovies = AppResult.Success(discoverResult),
+        )
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = movieRepository,
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+        ).create()
+
+        store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
+
+        store.accept(
+            MediaIntent.ApplyFilters(
+                MediaFilters(sortBy = "vote_average.desc"),
+            ),
+        )
+
+        val filteredState = store.states
+            .filter { !it.isLoading && it.filters.sortBy == "vote_average.desc" && it.items.isNotEmpty() }
+            .first()
+
+        assertEquals("Sorted Movie", filteredState.items.first().title)
+        assertEquals(1, movieRepository.discoverCalls)
+        assertEquals("vote_average.desc", movieRepository.lastDiscoverSortBy)
+    }
 }
