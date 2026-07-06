@@ -517,15 +517,16 @@ modules(
 | Bottom: Фильмы | `ContentType.Movies` |
 | Bottom: Сериалы / Актёры | заглушка |
 
-### Фаза 8b — Фильтры (только фильмы)
+### Фаза 8b — Фильтры (только фильмы) ✅
 
-- [ ] FAB на экране Media → bottom sheet
-- [ ] Фильтры MVP: **жанр** (dropdown), **сортировка** (популярность / дата / рейтинг)
-- [ ] `GET /genre/movie/list` — список жанров
-- [ ] При активных фильтрах: `GET /discover/movie` (`with_genres`, `sort_by`)
-- [ ] Без фильтров: `GET /movie/popular` (как в фазе 8)
-- [ ] Кнопки «Применить» / «Сбросить»; сброс перезагружает popular
-- [ ] FAB скрыт или disabled для вкладок Сериалы / Актёры
+- [x] FAB на экране Media → bottom sheet (`MediaFilterSheet`); круглый FAB, векторная иконка в стиле `Tune`
+- [x] Фильтры MVP: **жанр** (dropdown), **сортировка** (популярность / дата / рейтинг)
+- [x] `GET /genre/movie/list` — список жанров (`MovieRepository.getMovieGenres()`, загрузка при старте Store)
+- [x] При активных фильтрах: `GET /discover/movie` (`with_genres`, `sort_by`)
+- [x] Без фильтров: `GET /movie/popular` (как в фазе 8)
+- [x] Кнопки «Применить» / «Сбросить» (`ApplyFilters` / `ResetFilters`); сброс перезагружает popular
+- [x] FAB скрыт для вкладок Сериалы / Актёры
+- [x] Тесты: `MediaStore` — фильтры, сброс, загрузка жанров, сортировка
 
 #### TMDB API (фаза 8b)
 
@@ -542,13 +543,16 @@ modules(
 
 ### Фаза 9 — Профиль 2.0
 
-- [ ] Профиль — полноэкранный push (не таб)
-- [ ] **Guest:** экран входа (как сейчас в `login:impl`)
-- [ ] **Authenticated:** имя пользователя, logout
-- [ ] **Избранное** — сетка 2 колонки (тот же `MediaPosterGrid` из `core:ui`)
-- [ ] `GET /account/{account_id}/favorite/movies` — список избранного (как на сайте TMDB)
-- [ ] Клик по избранному → Details; toggle ★ на Details без изменений
-- [ ] Guest: секция избранного скрыта или CTA «Войти»
+- [x] Профиль — полноэкранный push (не таб)
+- [x] **Guest:** экран входа (как сейчас в `login:impl`)
+- [x] **Authenticated:** шапка с аватаром (буква + градиент), имя, «Смотреть профиль», logout
+- [x] Меню профиля: порядок и разделители как на сайте; каждый пункт — отдельный экран (child stack)
+- [x] **Избранное** — пункт меню → отдельный экран, сетка 2 колонки (`MediaPosterCell`)
+- [x] Кнопка профиля в top bar главного экрана — круглый аватар (как на сайте)
+- [x] `GET /account/{account_id}/favorite/movies` — список избранного (`AccountRepository.getFavoriteMovies()`)
+- [x] Клик по избранному → Details (`LoginLabel.NavigateToDetails` → колбэк из `main`); toggle ★ на Details без изменений
+- [x] Пункты меню (Обсуждения, Списки, Обзоры, Рейтинги, Список отслеживания, Избранное, API Subscription, Править профиль, Параметры) → отдельный экран; web-разделы — кнопка «Открыть на themoviedb.org»
+- [x] Guest: секция избранного/меню скрыта — показывается экран входа
 
 #### TMDB API (фаза 9)
 

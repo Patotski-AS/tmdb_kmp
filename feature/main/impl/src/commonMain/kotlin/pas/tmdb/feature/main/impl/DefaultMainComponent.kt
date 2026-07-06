@@ -20,7 +20,10 @@ class DefaultMainComponent(
         (Int) -> Unit,
         () -> Unit,
     ) -> MediaComponent,
-    private val loginComponentFactory: (ComponentContext) -> LoginComponent,
+    private val loginComponentFactory: (
+        ComponentContext,
+        (Int) -> Unit,
+    ) -> LoginComponent,
     private val detailsComponentFactory: (
         ComponentContext,
         Int,
@@ -55,7 +58,10 @@ class DefaultMainComponent(
             )
 
             Config.Profile -> MainComponent.Child.Profile(
-                loginComponentFactory(childContext),
+                loginComponentFactory(
+                    childContext,
+                    { movieId -> onMovieClick(movieId) },
+                ),
             )
 
             is Config.Details -> MainComponent.Child.Details(

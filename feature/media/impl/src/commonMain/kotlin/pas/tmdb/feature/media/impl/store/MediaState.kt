@@ -1,5 +1,6 @@
 package pas.tmdb.feature.media.impl.store
 
+import pas.tmdb.auth.api.SessionState
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
 import pas.tmdb.feature.media.api.MediaGenre
@@ -17,4 +18,5 @@ data class MediaState(
     val page: Int = 0,
     val endReached: Boolean = false,
     val favoriteIds: Set<Int> = emptySet(),
+    val sessionState: SessionState = SessionState.Guest,
 )

@@ -18,6 +18,8 @@ import com.arkivanov.decompose.extensions.compose.stack.animation.fade
 import com.arkivanov.decompose.extensions.compose.stack.animation.stackAnimation
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.feature.details.impl.DetailsContent
+import pas.tmdb.feature.login.api.LoginChild
+import pas.tmdb.feature.login.api.title
 import pas.tmdb.feature.login.impl.LoginContent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.media.impl.MediaContent
@@ -51,6 +53,12 @@ fun MainContent(
             }
 
             is MainComponent.Child.Profile -> {
+                val profileChildStack by instance.component.childStack.subscribeAsState()
+                val profileTitle = when (val profileChild = profileChildStack.active.instance) {
+                    LoginChild.Menu -> "Профиль"
+                    is LoginChild.Section -> profileChild.item.title
+                }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     containerColor = Color.Transparent,
@@ -61,9 +69,15 @@ fun MainContent(
                                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                                 navigationIconContentColor = MaterialTheme.colorScheme.primary,
                             ),
-                            title = { Text("Профиль") },
+                            title = { Text(profileTitle) },
                             navigationIcon = {
-                                IconButton(onClick = component::onBack) {
+                                IconButton(
+                                    onClick = {
+                                        if (!instance.component.onBack()) {
+                                            component.onBack()
+                                        }
+                                    },
+                                ) {
                                     Text("←")
                                 }
                             },

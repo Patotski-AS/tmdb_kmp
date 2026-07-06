@@ -71,4 +71,5 @@ private fun MediaState.toModel(): MediaModel =
         error = error,
         endReached = endReached,
         favoriteIds = favoriteIds,
+        sessionState = sessionState,
     )

@@ -26,6 +26,7 @@ val tmdbDataModule = module {
             apiClient = get(),
             sessionRepository = get(),
             favoriteMoviesCache = get(),
+            movieRepository = get(),
         )
     }
 }

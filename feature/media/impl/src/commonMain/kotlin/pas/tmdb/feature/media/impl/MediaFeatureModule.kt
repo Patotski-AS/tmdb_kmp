@@ -14,6 +14,7 @@ val mediaFeatureModule = module {
             storeFactory = get(),
             movieRepository = get(),
             favoriteMoviesCache = get(),
+            sessionRepository = get(),
         )
     }
     factory<MediaComponent> {
