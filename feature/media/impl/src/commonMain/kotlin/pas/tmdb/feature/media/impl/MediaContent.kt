@@ -3,7 +3,10 @@ package pas.tmdb.feature.media.impl
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -18,7 +21,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.core.ui.MediaGridLoadingState
 import pas.tmdb.core.ui.MediaPosterGrid
@@ -37,10 +44,23 @@ fun MediaContent(
     modifier: Modifier = Modifier,
 ) {
     val model by component.model.subscribeAsState()
+    var showFilterSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         containerColor = Color.Transparent,
+        floatingActionButton = {
+            if (model.contentType == ContentType.Movies) {
+                FloatingActionButton(
+                    onClick = { showFilterSheet = true },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    FilterFabIcon(modifier = Modifier.size(24.dp))
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -131,6 +151,16 @@ fun MediaContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
+        )
+    }
+
+    if (showFilterSheet) {
+        MediaFilterSheet(
+            genres = model.genres,
+            currentFilters = model.filters,
+            onApply = { filters -> component.onIntent(MediaIntent.ApplyFilters(filters)) },
+            onReset = { component.onIntent(MediaIntent.ResetFilters) },
+            onDismiss = { showFilterSheet = false },
         )
     }
 }

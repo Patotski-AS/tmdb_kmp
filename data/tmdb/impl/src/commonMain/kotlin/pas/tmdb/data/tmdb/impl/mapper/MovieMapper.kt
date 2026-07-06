@@ -1,13 +1,22 @@
 package pas.tmdb.data.tmdb.impl.mapper
 
+import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.MovieDetails
 import pas.tmdb.data.tmdb.api.model.PagedMovies
 import pas.tmdb.data.tmdb.impl.dto.ConfigurationResponseDto
+import pas.tmdb.data.tmdb.impl.dto.GenreDto
+import pas.tmdb.data.tmdb.impl.dto.GenreListResponseDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
+
+internal fun GenreListResponseDto.toDomain(): List<Genre> =
+    genres.map(GenreDto::toDomain)
+
+internal fun GenreDto.toDomain(): Genre =
+    Genre(id = id, name = name)
 
 internal fun ConfigurationResponseDto.toDomain(): ImageConfiguration =
     ImageConfiguration(

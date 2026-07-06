@@ -11,10 +11,12 @@ import kotlinx.coroutines.launch
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.FavoriteMoviesCache
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.PagedMovies
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
+import pas.tmdb.feature.media.api.MediaGenre
 import pas.tmdb.feature.media.api.MediaIntent
 import pas.tmdb.feature.media.api.MediaItemModel
 
@@ -39,6 +41,7 @@ class MediaStoreFactory(
     ) : CoroutineBootstrapper<Action>() {
         override fun invoke() {
             dispatch(Action.LoadInitial)
+            dispatch(Action.LoadGenres)
             scope.launch {
                 favoriteMoviesCache.favoriteIds.collect { favoriteIds ->
                     dispatch(Action.FavoriteIdsChanged(favoriteIds))
@@ -56,6 +59,7 @@ class MediaStoreFactory(
         override fun executeAction(action: Action) {
             when (action) {
                 Action.LoadInitial -> loadInitial()
+                Action.LoadGenres -> loadGenres()
                 is Action.FavoriteIdsChanged -> dispatch(Message.FavoriteIdsChanged(action.favoriteIds))
             }
         }
@@ -69,6 +73,7 @@ class MediaStoreFactory(
                 is MediaIntent.QueryChanged -> onQueryChanged(intent.query)
                 MediaIntent.ClearQuery -> onQueryChanged("")
                 is MediaIntent.ApplyFilters -> onFiltersApplied(intent.filters)
+                MediaIntent.ResetFilters -> onFiltersReset()
                 MediaIntent.OnProfileClick -> publish(MediaLabel.NavigateToProfile)
             }
         }
@@ -109,6 +114,22 @@ class MediaStoreFactory(
             dispatch(Message.FiltersChanged(filters))
             if (state().contentType != ContentType.Movies) return
             loadInitial(force = true)
+        }
+
+        private fun onFiltersReset() {
+            dispatch(Message.FiltersChanged(MediaFilters()))
+            if (state().contentType != ContentType.Movies) return
+            loadInitial(force = true)
+        }
+
+        private fun loadGenres() {
+            scope.launch {
+                when (val result = movieRepository.getMovieGenres()) {
+                    is AppResult.Success ->
+                        dispatch(Message.GenresLoaded(result.value.map(Genre::toMediaGenre)))
+                    is AppResult.Error -> Unit
+                }
+            }
         }
 
         private fun onContentTypeSelected(contentType: ContentType) {
@@ -213,6 +234,7 @@ class MediaStoreFactory(
             is Message.ErrorChanged -> copy(error = msg.error)
             is Message.SearchQueryChanged -> copy(searchQuery = msg.query)
             is Message.FiltersChanged -> copy(filters = msg.filters)
+            is Message.GenresLoaded -> copy(genres = msg.genres)
             is Message.FavoriteIdsChanged -> copy(favoriteIds = msg.favoriteIds)
             is Message.ContentTypeChanged -> copy(
                 contentType = msg.contentType,
@@ -235,6 +257,7 @@ class MediaStoreFactory(
 
     private sealed interface Action {
         data object LoadInitial : Action
+        data object LoadGenres : Action
         data class FavoriteIdsChanged(val favoriteIds: Set<Int>) : Action
     }
 
@@ -244,6 +267,7 @@ class MediaStoreFactory(
         data class ErrorChanged(val error: String?) : Message
         data class SearchQueryChanged(val query: String) : Message
         data class FiltersChanged(val filters: MediaFilters) : Message
+        data class GenresLoaded(val genres: List<MediaGenre>) : Message
         data class FavoriteIdsChanged(val favoriteIds: Set<Int>) : Message
         data class ContentTypeChanged(
             val contentType: ContentType,
@@ -284,6 +308,9 @@ private fun AppResult<PagedMovies>.filterByTitle(query: String): AppResult<Paged
 
         is AppResult.Error -> this
     }
+
+private fun Genre.toMediaGenre(): MediaGenre =
+    MediaGenre(id = id, name = name)
 
 private fun Movie.toItemModel(): MediaItemModel =
     MediaItemModel(

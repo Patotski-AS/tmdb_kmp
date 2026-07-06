@@ -64,6 +64,7 @@ private fun MediaState.toModel(): MediaModel =
         contentType = contentType,
         searchQuery = searchQuery,
         filters = filters,
+        genres = genres,
         items = items,
         isLoading = isLoading,
         isLoadingMore = isLoadingMore,
