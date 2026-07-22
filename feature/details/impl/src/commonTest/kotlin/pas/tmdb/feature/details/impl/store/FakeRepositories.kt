@@ -111,10 +111,20 @@ internal class FakeTvRepository(
     var detailsCalls: Int = 0
     var lastTvId: Int? = null
 
+    override suspend fun getTvGenres(): AppResult<List<Genre>> =
+        AppResult.Success(emptyList())
+
     override suspend fun getPopularTvShows(page: Int): AppResult<PagedTvShows> =
         AppResult.Success(PagedTvShows(emptyList(), page = 1, totalPages = 0, totalResults = 0))
 
     override suspend fun searchTvShows(query: String, page: Int): AppResult<PagedTvShows> =
+        AppResult.Success(PagedTvShows(emptyList(), page = 1, totalPages = 0, totalResults = 0))
+
+    override suspend fun discoverTvShows(
+        genreId: Int?,
+        sortBy: String?,
+        page: Int,
+    ): AppResult<PagedTvShows> =
         AppResult.Success(PagedTvShows(emptyList(), page = 1, totalPages = 0, totalResults = 0))
 
     override suspend fun getTvShowDetails(tvId: Int): AppResult<TvShowDetails> {

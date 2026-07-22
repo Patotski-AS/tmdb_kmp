@@ -10,7 +10,8 @@ data class MediaState(
     val contentType: ContentType = ContentType.Movies,
     val searchQuery: String = "",
     val filters: MediaFilters = MediaFilters(),
-    val genres: List<MediaGenre> = emptyList(),
+    val movieGenres: List<MediaGenre> = emptyList(),
+    val tvGenres: List<MediaGenre> = emptyList(),
     val items: List<MediaItemModel> = emptyList(),
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -19,4 +20,11 @@ data class MediaState(
     val endReached: Boolean = false,
     val favoriteIds: Set<Int> = emptySet(),
     val sessionState: SessionState = SessionState.Guest,
-)
+) {
+    val genres: List<MediaGenre>
+        get() = when (contentType) {
+            ContentType.Movies -> movieGenres
+            ContentType.Tv -> tvGenres
+            ContentType.People -> emptyList()
+        }
+}

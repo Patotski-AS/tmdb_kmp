@@ -39,7 +39,7 @@ import pas.tmdb.core.ui.ShimmerDetails
 import pas.tmdb.core.ui.TmdbErrorState
 import pas.tmdb.core.ui.VideoThumbnailItem
 import pas.tmdb.core.ui.VideoThumbnailRow
-import pas.tmdb.core.ui.YoutubeVideoOverlay
+import pas.tmdb.core.ui.rememberOpenYoutubeVideoExternally
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsImageGallerySection
 import pas.tmdb.feature.details.api.DetailsIntent
@@ -65,6 +65,7 @@ fun DetailsContent(
     modifier: Modifier = Modifier,
 ) {
     val model by component.model.subscribeAsState()
+    val openYoutube = rememberOpenYoutubeVideoExternally()
 
     DetailsExternalUrlEffect(component)
 
@@ -113,6 +114,7 @@ fun DetailsContent(
                     DetailsBody(
                         model = model,
                         onIntent = component::onIntent,
+                        onVideoClick = openYoutube,
                         modifier = Modifier.fillMaxSize().padding(padding),
                     )
                 }
@@ -133,13 +135,6 @@ fun DetailsContent(
                 )
             }
         }
-
-        model.selectedVideoKey?.let { videoKey ->
-            YoutubeVideoOverlay(
-                videoKey = videoKey,
-                onDismiss = { component.onIntent(DetailsIntent.DismissVideoPlayer) },
-            )
-        }
     }
 }
 
@@ -147,6 +142,7 @@ fun DetailsContent(
 private fun DetailsBody(
     model: DetailsModel,
     onIntent: (DetailsIntent) -> Unit,
+    onVideoClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -193,7 +189,7 @@ private fun DetailsBody(
                             typeLabel = video.typeLabel,
                         )
                     },
-                    onItemClick = { key -> onIntent(DetailsIntent.OnVideoClick(key)) },
+                    onItemClick = onVideoClick,
                 )
             }
 

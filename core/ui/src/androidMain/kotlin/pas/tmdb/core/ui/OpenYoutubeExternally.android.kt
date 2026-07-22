@@ -21,7 +21,7 @@ actual fun rememberOpenYoutubeVideoExternally(): (String) -> Unit {
                 CustomTabsIntent.Builder()
                     .setShowTitle(true)
                     .build()
-                    .launchUrl(context, Uri.parse(youtubeEmbedUrl(videoKey)))
+                    .launchUrl(context, Uri.parse(youtubeWatchUrl(videoKey)))
             }
         }
     }

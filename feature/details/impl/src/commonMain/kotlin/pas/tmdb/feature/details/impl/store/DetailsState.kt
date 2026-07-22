@@ -14,6 +14,5 @@ data class DetailsState(
     val sessionState: SessionState = SessionState.Guest,
     val isFavorite: Boolean? = null,
     val isFavoriteLoading: Boolean = false,
-    val selectedVideoKey: String? = null,
     val imageGallery: DetailsImageGallery? = null,
 )

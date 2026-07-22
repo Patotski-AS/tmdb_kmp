@@ -34,6 +34,11 @@ internal class TmdbApiClient(
             parameter("language", LANGUAGE)
         }
 
+    suspend fun getTvGenres(): GenreListResponseDto =
+        tmdbGet("${config.baseUrl}genre/tv/list") {
+            parameter("language", LANGUAGE)
+        }
+
     suspend fun getPopularMovies(page: Int): PopularMoviesResponseDto =
         tmdbGet("${config.baseUrl}movie/popular") {
             parameter("language", LANGUAGE)
@@ -100,6 +105,18 @@ internal class TmdbApiClient(
         sortBy: String? = null,
     ): PopularMoviesResponseDto =
         tmdbGet("${config.baseUrl}discover/movie") {
+            parameter("language", LANGUAGE)
+            parameter("page", page)
+            genreId?.let { parameter("with_genres", it) }
+            sortBy?.let { parameter("sort_by", it) }
+        }
+
+    suspend fun discoverTvShows(
+        page: Int,
+        genreId: Int? = null,
+        sortBy: String? = null,
+    ): PopularTvResponseDto =
+        tmdbGet("${config.baseUrl}discover/tv") {
             parameter("language", LANGUAGE)
             parameter("page", page)
             genreId?.let { parameter("with_genres", it) }
