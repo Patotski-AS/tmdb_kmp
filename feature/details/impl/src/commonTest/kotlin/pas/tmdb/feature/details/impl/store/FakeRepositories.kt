@@ -3,6 +3,7 @@ package pas.tmdb.feature.details.impl.store
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.AccountRepository
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.TvRepository
 import pas.tmdb.data.tmdb.api.model.CastMember
 import pas.tmdb.data.tmdb.api.model.CrewMember
 import pas.tmdb.data.tmdb.api.model.Genre
@@ -11,6 +12,9 @@ import pas.tmdb.data.tmdb.api.model.MediaImage
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.MovieDetails
 import pas.tmdb.data.tmdb.api.model.PagedMovies
+import pas.tmdb.data.tmdb.api.model.PagedTvShows
+import pas.tmdb.data.tmdb.api.model.TvShow
+import pas.tmdb.data.tmdb.api.model.TvShowDetails
 import pas.tmdb.data.tmdb.api.model.Video
 
 internal class FakeMovieRepository(
@@ -95,6 +99,79 @@ internal class FakeMovieRepository(
                         posterUrl = "rec.jpg",
                         voteAverage = 8.5,
                         releaseDate = "1994",
+                    ),
+                ),
+            )
+    }
+}
+
+internal class FakeTvRepository(
+    private val tvShowDetails: AppResult<TvShowDetails> = AppResult.Success(sampleTvShowDetails()),
+) : TvRepository {
+    var detailsCalls: Int = 0
+    var lastTvId: Int? = null
+
+    override suspend fun getPopularTvShows(page: Int): AppResult<PagedTvShows> =
+        AppResult.Success(PagedTvShows(emptyList(), page = 1, totalPages = 0, totalResults = 0))
+
+    override suspend fun searchTvShows(query: String, page: Int): AppResult<PagedTvShows> =
+        AppResult.Success(PagedTvShows(emptyList(), page = 1, totalPages = 0, totalResults = 0))
+
+    override suspend fun getTvShowDetails(tvId: Int): AppResult<TvShowDetails> {
+        detailsCalls++
+        lastTvId = tvId
+        return tvShowDetails
+    }
+
+    companion object {
+        fun sampleTvShowDetails(): TvShowDetails =
+            TvShowDetails(
+                id = 1396,
+                name = "Breaking Bad",
+                overview = "Overview",
+                posterUrl = "poster.jpg",
+                voteAverage = 8.9,
+                firstAirDate = "2008-01-20",
+                episodeRuntimeMinutes = 45,
+                genres = listOf("Драма", "Криминал"),
+                tagline = "Change the equation.",
+                backdropUrl = "backdrop.jpg",
+                originalName = "Breaking Bad",
+                status = "Ended",
+                originalLanguage = "en",
+                numberOfSeasons = 5,
+                numberOfEpisodes = 62,
+                cast = listOf(
+                    CastMember(
+                        id = 17419,
+                        name = "Bryan Cranston",
+                        character = "Walter White",
+                        profileUrl = "profile.jpg",
+                        order = 0,
+                    ),
+                ),
+                crew = emptyList(),
+                createdBy = listOf("Vince Gilligan"),
+                videos = listOf(
+                    Video(
+                        id = "1",
+                        key = "HhesaQXLuRY",
+                        name = "Trailer",
+                        site = "YouTube",
+                        type = "Trailer",
+                        official = true,
+                    ),
+                ),
+                backdrops = emptyList(),
+                posters = emptyList(),
+                recommendations = listOf(
+                    TvShow(
+                        id = 60059,
+                        name = "Better Call Saul",
+                        overview = "",
+                        posterUrl = "rec.jpg",
+                        voteAverage = 8.7,
+                        firstAirDate = "2015",
                     ),
                 ),
             )

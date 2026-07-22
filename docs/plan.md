@@ -316,7 +316,7 @@ RootComponent                              [:app]
 | ContentType | Каталог | Детали |
 |-------------|---------|--------|
 | `Movies` | grid + пагинация | `feature:details` (фильм) |
-| `Tv` | grid + пагинация (фаза 10) | `feature:details` (сериал, расширение) |
+| `Tv` | grid + пагинация (фаза 10 ✅) | `feature:details` (сериал) |
 | `People` | grid, круглое фото (фаза 11) | `feature:person` |
 
 Фильмы и сериалы — **общий каркас** экрана деталей; актёр — **отдельный** модуль `feature:person`.
@@ -327,7 +327,7 @@ RootComponent                              [:app]
 MediaContent (Compose)
   → MediaComponent.onIntent
   → MediaStore
-  → MediaRepository / MovieRepository (tmdb-impl)
+  → MovieRepository / TvRepository (tmdb-impl)
   → TmdbApiClient (Bearer из TmdbConfig)
 ```
 
@@ -337,12 +337,15 @@ MediaContent (Compose)
 
 | Endpoint | Назначение |
 |----------|------------|
-| `GET /movie/{movie_id}` | название, описание, рейтинг, жанры, runtime |
-| `GET /movie/{movie_id}/credits` | актёры (будущее расширение) |
-| `GET /tv/{series_id}` | детали сериала (фаза 10) |
+| `GET /movie/{movie_id}` | название, описание, рейтинг, жанры, runtime + `append_to_response` |
+| `GET /tv/{series_id}` | детали сериала — общий каркас UI с фильмом + сезоны/эпизоды |
 
-Label из media/search: `NavigateToDetails(id)` → push в child stack `main-impl`.
-Сериал — тот же модуль `details`, общий каркас UI с фильмом; актёр — `feature:person` (фаза 11).
+`append_to_response` (movie/tv): `credits,videos,images,recommendations`.
+
+Экран деталей (фаза 9b+): hero, описание, cast/crew, видео (YouTube embed / внешнее открытие), кадры и постеры с галереей, метаданные, рекомендации. Избранное — только для фильмов (account API).
+
+Label из media: `NavigateToDetails(id, mediaType)` → push в child stack `main-impl`.
+Сериал — тот же модуль `details`; актёр — `feature:person` (фаза 11).
 
 ---
 
@@ -501,7 +504,7 @@ modules(
 - [x] `media:impl`: `LazyVerticalGrid` 2 колонки, фиксированная высота ячейки, бесконечная пагинация
 - [x] `core:ui`: `MediaPosterGrid` / `MediaPosterCell` (постер 2:3 + название, рамка, избранное)
 - [x] Данные: `GET /movie/popular`, `language=ru-RU`, `page`; `discover/movie` — подготовка фильтров
-- [x] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро»
+- [x] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро» (сериалы → фаза 10; актёры → фаза 11)
 - [x] Shimmer / error / empty для grid; тема TMDB (`TmdbTheme`)
 - [x] Клик по фильму → `DetailsComponent`; сохранение скролла при возврате
 - [x] Избранное на постерах: рамка + звезда; синхронизация с API при старте (`FavoriteMoviesSynchronizer`)
@@ -515,7 +518,8 @@ modules(
 | 👤 | `NavigateToProfile` → push Login/Profile |
 | Клик по постеру | push Details |
 | Bottom: Фильмы | `ContentType.Movies` |
-| Bottom: Сериалы / Актёры | заглушка |
+| Bottom: Сериалы | `ContentType.Tv` (фаза 10) |
+| Bottom: Актёры | заглушка (фаза 11) |
 
 ### Фаза 8b — Фильтры (только фильмы) ✅
 
@@ -541,7 +545,7 @@ modules(
 | `primary_release_date.desc` | По дате выхода |
 | `vote_average.desc` | По оценке |
 
-### Фаза 9 — Профиль 2.0
+### Фаза 9 — Профиль 2.0 ✅
 
 - [x] Профиль — полноэкранный push (не таб)
 - [x] **Guest:** экран входа (как сейчас в `login:impl`)
@@ -560,13 +564,31 @@ modules(
 |----------|------------|
 | `GET /account/{account_id}/favorite/movies` | список избранных фильмов |
 
-### Фаза 10 — Сериалы
+### Фаза 9b — Details 2.0 (медиа) ✅
 
-- [ ] Вкладка **Сериалы** в `MediaComponent` — рабочий каталог
-- [ ] `GET /discover/tv` или `GET /tv/popular` — grid + пагинация
-- [ ] `data:tmdb`: модели `TvShow`, `TvRepository` / методы в `MediaRepository`
-- [ ] `feature:details`: расширение для сериала (`GET /tv/{id}`) — общий каркас с фильмом + сезоны/эпизоды/статус
-- [ ] `feature:search`: `GET /search/tv` при открытии поиска с активной вкладкой Сериалы
+- [x] `append_to_response=credits,videos,images,recommendations` для `GET /movie/{id}`
+- [x] Domain: `CastMember`, `CrewMember`, `Video`, `MediaImage`; расширение `MovieDetails`
+- [x] UI: cast (превью + «Смотреть ещё»), key crew, видео, кадры/постеры, галерея, рекомендации
+- [x] YouTube: `YoutubeEmbedPlayer` + `YoutubeVideoOverlay` (Android / iOS / Desktop); `OpenYoutubeExternally`
+- [x] `RootComponentContext` (expect/actual) для платформенного контекста плеера
+- [x] Тесты: `DetailsStore` — cast/videos, gallery, ошибки
+
+#### TMDB API (фаза 9b)
+
+| Endpoint / поле | Назначение |
+|-----------------|------------|
+| `credits` | актёры и команда |
+| `videos` | трейлеры/тизеры (YouTube) |
+| `images` | backdrops / posters |
+| `recommendations` | похожие фильмы |
+
+### Фаза 10 — Сериалы ✅
+
+- [x] Вкладка **Сериалы** в `MediaComponent` — рабочий каталог
+- [x] `GET /tv/popular` — grid + пагинация
+- [x] `data:tmdb`: модели `TvShow`, `TvShowDetails`, `TvRepository`
+- [x] `feature:details`: расширение для сериала (`GET /tv/{id}`) — общий каркас с фильмом + сезоны/эпизоды/статус
+- [x] Inline-поиск на вкладке Сериалы: `GET /search/tv`
 - [ ] Фильтры для TV — отдельная итерация (после 8b, по аналогии с `discover/tv`)
 
 #### TMDB API (фаза 10)

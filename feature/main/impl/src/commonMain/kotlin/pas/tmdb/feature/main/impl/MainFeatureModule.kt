@@ -20,9 +20,23 @@ val mainFeatureModule = module {
             loginComponentFactory = { childContext, onNavigateToDetails ->
                 get<LoginComponent> { parametersOf(childContext, onNavigateToDetails) }
             },
-            detailsComponentFactory = { childContext, movieId, onBack, onNavigateToLogin, onNavigateToDetails ->
+            detailsComponentFactory = {
+                    childContext,
+                    mediaId,
+                    mediaType,
+                    onBack,
+                    onNavigateToLogin,
+                    onNavigateToDetails,
+                ->
                 get<DetailsComponent> {
-                    parametersOf(childContext, movieId, onBack, onNavigateToLogin, onNavigateToDetails)
+                    parametersOf(
+                        childContext,
+                        mediaId,
+                        mediaType,
+                        onBack,
+                        onNavigateToLogin,
+                        onNavigateToDetails,
+                    )
                 }
             },
         )

@@ -14,6 +14,8 @@ import kotlinx.coroutines.test.setMain
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.PagedMovies
+import pas.tmdb.data.tmdb.api.model.PagedTvShows
+import pas.tmdb.data.tmdb.api.model.TvShow
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
 import pas.tmdb.feature.media.api.MediaIntent
@@ -57,6 +59,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -80,6 +83,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -93,11 +97,28 @@ class MediaStoreFactoryTest {
     }
 
     @Test
-    fun contentTypeSelected_switchesToTvWithoutLoading() = runTest {
+    fun contentTypeSelected_loadsPopularTvShows() = runTest {
+        val tvShows = PagedTvShows(
+            shows = listOf(
+                TvShow(
+                    id = 1396,
+                    name = "Breaking Bad",
+                    overview = "",
+                    posterUrl = null,
+                    voteAverage = 8.9,
+                    firstAirDate = "2008",
+                ),
+            ),
+            page = 1,
+            totalPages = 1,
+            totalResults = 1,
+        )
+        val tvRepository = FakeTvRepository(popularTvShows = AppResult.Success(tvShows))
         val movieRepository = FakeMovieRepository()
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = tvRepository,
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -107,12 +128,54 @@ class MediaStoreFactoryTest {
         store.accept(MediaIntent.OnContentTypeSelected(ContentType.Tv))
 
         val tvState = store.states
-            .filter { it.contentType == ContentType.Tv }
+            .filter { it.contentType == ContentType.Tv && !it.isLoading && it.items.isNotEmpty() }
             .first()
 
-        assertTrue(tvState.items.isEmpty())
-        assertTrue(tvState.endReached)
+        assertEquals("Breaking Bad", tvState.items.first().title)
+        assertEquals(1, tvRepository.popularCalls)
         assertEquals(1, movieRepository.popularCalls)
+    }
+
+    @Test
+    fun queryChanged_onTvTab_triggersTvSearch() = runTest {
+        val searchResult = PagedTvShows(
+            shows = listOf(
+                TvShow(
+                    id = 1399,
+                    name = "Game of Thrones",
+                    overview = "",
+                    posterUrl = null,
+                    voteAverage = 8.4,
+                    firstAirDate = "2011",
+                ),
+            ),
+            page = 1,
+            totalPages = 1,
+            totalResults = 1,
+        )
+        val tvRepository = FakeTvRepository(searchTvShows = AppResult.Success(searchResult))
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = FakeMovieRepository(),
+            tvRepository = tvRepository,
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
+        ).create()
+
+        store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
+        store.accept(MediaIntent.OnContentTypeSelected(ContentType.Tv))
+        store.states.filter { it.contentType == ContentType.Tv && !it.isLoading }.first()
+
+        store.accept(MediaIntent.QueryChanged("Game"))
+        advanceTimeBy(500)
+
+        val searchState = store.states
+            .filter { !it.isLoading && it.searchQuery == "Game" && it.items.isNotEmpty() }
+            .first()
+
+        assertEquals("Game of Thrones", searchState.items.first().title)
+        assertEquals(1, tvRepository.searchCalls)
+        assertEquals("Game", tvRepository.lastSearchQuery)
     }
 
     @Test
@@ -138,6 +201,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -180,6 +244,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -203,6 +268,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -231,6 +297,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -267,6 +334,7 @@ class MediaStoreFactoryTest {
         val store = MediaStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = FakeTvRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()

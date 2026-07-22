@@ -19,7 +19,9 @@ import pas.tmdb.data.tmdb.impl.dto.FavoriteRequestDto
 import pas.tmdb.data.tmdb.impl.dto.MovieAccountStatesDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
+import pas.tmdb.data.tmdb.impl.dto.PopularTvResponseDto
 import pas.tmdb.data.tmdb.impl.dto.TmdbErrorResponseDto
+import pas.tmdb.data.tmdb.impl.dto.TvShowDetailsDto
 
 internal class TmdbApiClient(
     private val httpClient: HttpClient,
@@ -40,6 +42,26 @@ internal class TmdbApiClient(
         tmdbGet("${config.baseUrl}movie/$movieId") {
             parameter("language", LANGUAGE)
             parameter("append_to_response", "credits,videos,images,recommendations")
+        }
+
+    suspend fun getPopularTvShows(page: Int): PopularTvResponseDto =
+        tmdbGet("${config.baseUrl}tv/popular") {
+            parameter("language", LANGUAGE)
+            parameter("page", page)
+        }
+
+    suspend fun getTvShowDetails(tvId: Int): TvShowDetailsDto =
+        tmdbGet("${config.baseUrl}tv/$tvId") {
+            parameter("language", LANGUAGE)
+            parameter("append_to_response", "credits,videos,images,recommendations")
+        }
+
+    suspend fun searchTvShows(query: String, page: Int): PopularTvResponseDto =
+        tmdbGet("${config.baseUrl}search/tv") {
+            parameter("language", LANGUAGE)
+            parameter("query", query)
+            parameter("page", page)
+            parameter("include_adult", false)
         }
 
     suspend fun searchMovies(query: String, page: Int): PopularMoviesResponseDto =

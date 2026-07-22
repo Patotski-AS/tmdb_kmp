@@ -2,10 +2,12 @@ package pas.tmdb.feature.details.impl.store
 
 import pas.tmdb.auth.api.SessionState
 import pas.tmdb.feature.details.api.DetailsImageGallery
+import pas.tmdb.feature.details.api.DetailsMediaType
 import pas.tmdb.feature.details.api.DetailsModel
 
 data class DetailsState(
-    val movieId: Int,
+    val mediaId: Int,
+    val mediaType: DetailsMediaType,
     val details: DetailsModel = DetailsModel(),
     val isLoading: Boolean = false,
     val error: String? = null,

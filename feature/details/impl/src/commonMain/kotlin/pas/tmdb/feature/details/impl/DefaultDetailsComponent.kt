@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsIntent
+import pas.tmdb.feature.details.api.DetailsMediaType
 import pas.tmdb.feature.details.api.DetailsModel
 import pas.tmdb.feature.details.impl.store.DetailsLabel
 import pas.tmdb.feature.details.impl.store.DetailsState
@@ -23,16 +24,17 @@ import pas.tmdb.feature.details.impl.store.DetailsStoreFactory
 
 internal class DefaultDetailsComponent(
     componentContext: ComponentContext,
-    movieId: Int,
+    mediaId: Int,
+    mediaType: DetailsMediaType,
     storeFactory: DetailsStoreFactory,
     private val onBack: () -> Unit,
     private val onNavigateToLogin: () -> Unit,
-    private val onNavigateToDetails: (Int) -> Unit,
+    private val onNavigateToDetails: (Int, DetailsMediaType) -> Unit,
 ) : DetailsComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private val store = storeFactory.create(movieId)
+    private val store = storeFactory.create(mediaId = mediaId, mediaType = mediaType)
 
     private val _model = MutableValue(DetailsModel(isLoading = true))
     private val _externalUrlEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -54,7 +56,7 @@ internal class DefaultDetailsComponent(
                     is DetailsLabel.NavigateToPerson -> {
                         _externalUrlEvents.tryEmit("https://www.themoviedb.org/person/${label.personId}")
                     }
-                    is DetailsLabel.NavigateToDetails -> onNavigateToDetails(label.movieId)
+                    is DetailsLabel.NavigateToDetails -> onNavigateToDetails(label.id, label.mediaType)
                     is DetailsLabel.ShowError -> Unit
                 }
             }
@@ -83,6 +85,7 @@ private fun DetailsState.toModel(): DetailsModel =
         )
     } else {
         DetailsModel(
+            mediaType = mediaType,
             isLoading = isLoading,
             error = error,
             sessionState = sessionState,

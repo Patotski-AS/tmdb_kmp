@@ -50,6 +50,7 @@ data class DetailsImageGallery(
 )
 
 data class DetailsModel(
+    val mediaType: DetailsMediaType = DetailsMediaType.Movie,
     val title: String? = null,
     val overview: String? = null,
     val posterUrl: String? = null,
@@ -64,6 +65,8 @@ data class DetailsModel(
     val originalLanguage: String? = null,
     val budget: Long? = null,
     val revenue: Long? = null,
+    val numberOfSeasons: Int? = null,
+    val numberOfEpisodes: Int? = null,
     val cast: List<DetailsCastMember> = emptyList(),
     val showFullCast: Boolean = false,
     val crew: List<DetailsCrewMember> = emptyList(),
@@ -91,7 +94,7 @@ sealed interface DetailsIntent {
         val section: DetailsImageGallerySection,
         val index: Int,
     ) : DetailsIntent
-    data class OnRecommendationClick(val movieId: Int) : DetailsIntent
+    data class OnRecommendationClick(val id: Int) : DetailsIntent
     data object ShowFullCast : DetailsIntent
     data object DismissVideoPlayer : DetailsIntent
     data object DismissImageGallery : DetailsIntent

@@ -1,0 +1,26 @@
+package pas.tmdb.data.tmdb.api.model
+
+data class TvShowDetails(
+    val id: Int,
+    val name: String,
+    val overview: String,
+    val posterUrl: String?,
+    val voteAverage: Double,
+    val firstAirDate: String?,
+    val episodeRuntimeMinutes: Int?,
+    val genres: List<String>,
+    val tagline: String?,
+    val backdropUrl: String?,
+    val originalName: String?,
+    val status: String?,
+    val originalLanguage: String?,
+    val numberOfSeasons: Int?,
+    val numberOfEpisodes: Int?,
+    val cast: List<CastMember>,
+    val crew: List<CrewMember>,
+    val createdBy: List<String>,
+    val videos: List<Video>,
+    val backdrops: List<MediaImage>,
+    val posters: List<MediaImage>,
+    val recommendations: List<TvShow>,
+)

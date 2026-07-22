@@ -15,6 +15,7 @@ import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.model.CastMember
 import pas.tmdb.feature.details.api.DetailsImageGallerySection
 import pas.tmdb.feature.details.api.DetailsIntent
+import pas.tmdb.feature.details.api.DetailsMediaType
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -52,6 +53,28 @@ class DetailsStoreFactoryTest {
         assertTrue(state.details.crew.isNotEmpty())
         assertEquals(1, movieRepository.detailsCalls)
         assertEquals(550, movieRepository.lastMovieId)
+    }
+
+    @Test
+    fun loadInitial_tv_populatesSeasonsAndCreators() = runTest {
+        val tvRepository = FakeTvRepository()
+        val store = createStore(
+            mediaType = DetailsMediaType.Tv,
+            mediaId = 1396,
+            tvRepository = tvRepository,
+        )
+
+        val state = store.states
+            .filter { !it.isLoading && it.details.title != null }
+            .first()
+
+        assertEquals("Breaking Bad", state.details.title)
+        assertEquals(5, state.details.numberOfSeasons)
+        assertEquals(62, state.details.numberOfEpisodes)
+        assertEquals(DetailsMediaType.Tv, state.details.mediaType)
+        assertTrue(state.details.crew.any { it.jobLabel == "Создатель" })
+        assertEquals(1, tvRepository.detailsCalls)
+        assertEquals(1396, tvRepository.lastTvId)
     }
 
     @Test
@@ -135,11 +158,15 @@ class DetailsStoreFactoryTest {
 
     private fun createStore(
         movieRepository: FakeMovieRepository = FakeMovieRepository(),
+        tvRepository: FakeTvRepository = FakeTvRepository(),
+        mediaId: Int = 550,
+        mediaType: DetailsMediaType = DetailsMediaType.Movie,
     ): DetailsStore =
         DetailsStoreFactory(
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
+            tvRepository = tvRepository,
             accountRepository = FakeAccountRepository(),
             sessionRepository = FakeSessionRepository(),
-        ).create(movieId = 550)
+        ).create(mediaId = mediaId, mediaType = mediaType)
 }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaComponent
 import pas.tmdb.feature.media.api.MediaIntent
 import pas.tmdb.feature.media.api.MediaModel
@@ -21,7 +22,7 @@ import pas.tmdb.feature.media.impl.store.MediaStoreFactory
 internal class DefaultMediaComponent(
     componentContext: ComponentContext,
     storeFactory: MediaStoreFactory,
-    private val onNavigateToDetails: (Int) -> Unit,
+    private val onNavigateToDetails: (Int, ContentType) -> Unit,
     private val onNavigateToProfile: () -> Unit,
 ) : MediaComponent, ComponentContext by componentContext {
 
@@ -42,7 +43,8 @@ internal class DefaultMediaComponent(
         scope.launch {
             store.labels.collect { label ->
                 when (label) {
-                    is MediaLabel.NavigateToDetails -> onNavigateToDetails(label.movieId)
+                    is MediaLabel.NavigateToDetails ->
+                        onNavigateToDetails(label.id, label.contentType)
                     MediaLabel.NavigateToProfile -> onNavigateToProfile()
                     is MediaLabel.ShowError -> Unit
                 }
