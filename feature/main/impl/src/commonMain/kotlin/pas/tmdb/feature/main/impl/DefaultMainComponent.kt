@@ -29,6 +29,7 @@ class DefaultMainComponent(
         Int,
         () -> Unit,
         () -> Unit,
+        (Int) -> Unit,
     ) -> DetailsComponent,
 ) : MainComponent, ComponentContext by componentContext {
 
@@ -70,6 +71,7 @@ class DefaultMainComponent(
                     config.movieId,
                     { navigation.pop() },
                     { onNavigateToLogin() },
+                    { movieId -> onMovieClick(movieId) },
                 ),
             )
         }

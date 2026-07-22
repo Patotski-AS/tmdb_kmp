@@ -139,7 +139,7 @@ class SearchStoreFactory(
                 isLoadingMore = false,
             )
             is Message.MoviesUpdated -> copy(
-                movies = if (msg.append) movies + msg.movies else msg.movies,
+                movies = if (msg.append) (movies + msg.movies).distinctBy { it.id } else msg.movies,
                 page = msg.page,
                 endReached = msg.endReached,
             )

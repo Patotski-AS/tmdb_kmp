@@ -75,7 +75,31 @@ internal class FakeMovieRepository(
     }
 
     override suspend fun getMovieDetails(movieId: Int): AppResult<MovieDetails> =
-        AppResult.Error("Not implemented")
+        AppResult.Success(
+            MovieDetails(
+                id = movieId,
+                title = "Test Movie",
+                overview = "Overview",
+                posterUrl = null,
+                voteAverage = 8.5,
+                releaseDate = "2024-01-01",
+                runtime = 120,
+                genres = emptyList(),
+                tagline = null,
+                backdropUrl = null,
+                originalTitle = null,
+                status = null,
+                originalLanguage = null,
+                budget = 0L,
+                revenue = 0L,
+                cast = emptyList(),
+                crew = emptyList(),
+                videos = emptyList(),
+                backdrops = emptyList(),
+                posters = emptyList(),
+                recommendations = emptyList(),
+            ),
+        )
 
     override suspend fun getImageConfiguration(): AppResult<ImageConfiguration> =
         AppResult.Error("Not implemented")

@@ -258,7 +258,7 @@ class MediaStoreFactory(
                 isLoadingMore = false,
             )
             is Message.ItemsUpdated -> copy(
-                items = if (msg.append) items + msg.items else msg.items,
+                items = if (msg.append) (items + msg.items).distinctBy { it.id } else msg.items,
                 page = msg.page,
                 endReached = msg.endReached,
             )

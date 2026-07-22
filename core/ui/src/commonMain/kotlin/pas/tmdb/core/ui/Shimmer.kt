@@ -97,7 +97,7 @@ fun ShimmerDetails(modifier: Modifier = Modifier) {
         ShimmerBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(320.dp),
+                .height(260.dp),
         )
         Column(
             modifier = Modifier.padding(16.dp),
@@ -105,18 +105,23 @@ fun ShimmerDetails(modifier: Modifier = Modifier) {
         ) {
             ShimmerBox(
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(28.dp),
-            )
-            ShimmerBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.4f)
+                    .fillMaxWidth(0.5f)
                     .height(18.dp),
             )
             ShimmerBox(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp),
+                    .height(60.dp),
+            )
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+            )
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
             )
         }
     }

@@ -19,6 +19,7 @@ val detailsFeatureModule = module {
         movieId: Int,
         onBack: () -> Unit,
         onNavigateToLogin: () -> Unit,
+        onNavigateToDetails: (Int) -> Unit,
     ) ->
         DefaultDetailsComponent(
             componentContext = componentContext,
@@ -26,6 +27,7 @@ val detailsFeatureModule = module {
             storeFactory = get(),
             onBack = onBack,
             onNavigateToLogin = onNavigateToLogin,
+            onNavigateToDetails = onNavigateToDetails,
         )
     }
 }

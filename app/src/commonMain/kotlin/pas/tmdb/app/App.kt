@@ -3,14 +3,13 @@ package pas.tmdb.app
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import com.arkivanov.decompose.ComponentContext
-import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import pas.tmdb.auth.impl.authModule
 import pas.tmdb.core.navigation.DefaultRootComponent
 import pas.tmdb.core.navigation.RootComponent
@@ -55,7 +54,8 @@ fun App() {
                 .build()
         }
         TmdbTheme {
-            val root = createRootComponent()
+            val componentContext = rememberRootComponentContext()
+            val root = remember(componentContext) { createRootComponent(componentContext) }
             RootContent(root)
         }
     }
@@ -67,11 +67,8 @@ private fun RootContent(component: RootComponent) {
     MainContent(component = main)
 }
 
-@Composable
-private fun createRootComponent(): RootComponent {
+private fun createRootComponent(componentContext: ComponentContext): RootComponent {
     val koin = getKoin()
-    val lifecycle = LifecycleRegistry()
-    val componentContext = DefaultComponentContext(lifecycle = lifecycle)
 
     return DefaultRootComponent(
         componentContext = componentContext,

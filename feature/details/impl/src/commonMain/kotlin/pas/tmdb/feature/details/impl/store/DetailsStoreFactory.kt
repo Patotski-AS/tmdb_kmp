@@ -11,9 +11,20 @@ import pas.tmdb.auth.api.SessionState
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.AccountRepository
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.model.CastMember
+import pas.tmdb.data.tmdb.api.model.CrewMember
+import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.MovieDetails
+import pas.tmdb.data.tmdb.api.model.Video
+import pas.tmdb.feature.details.api.DetailsCastMember
+import pas.tmdb.feature.details.api.DetailsCrewMember
+import pas.tmdb.feature.details.api.DetailsImage
+import pas.tmdb.feature.details.api.DetailsImageGallery
+import pas.tmdb.feature.details.api.DetailsImageGallerySection
 import pas.tmdb.feature.details.api.DetailsIntent
 import pas.tmdb.feature.details.api.DetailsModel
+import pas.tmdb.feature.details.api.DetailsRecommendation
+import pas.tmdb.feature.details.api.DetailsVideo
 
 interface DetailsStore : Store<DetailsIntent, DetailsState, DetailsLabel>
 
@@ -80,6 +91,27 @@ class DetailsStoreFactory(
                 DetailsIntent.Back -> publish(DetailsLabel.NavigateBack)
 
                 DetailsIntent.ToggleFavorite -> toggleFavorite()
+
+                is DetailsIntent.OnCastMemberClick -> publish(DetailsLabel.NavigateToPerson(intent.personId))
+
+                is DetailsIntent.OnVideoClick -> dispatch(Message.VideoSelected(intent.videoKey))
+
+                is DetailsIntent.OnImageClick -> dispatch(
+                    Message.ImageGalleryChanged(
+                        DetailsImageGallery(
+                            section = intent.section,
+                            index = intent.index,
+                        ),
+                    ),
+                )
+
+                is DetailsIntent.OnRecommendationClick -> publish(DetailsLabel.NavigateToDetails(intent.movieId))
+
+                DetailsIntent.ShowFullCast -> dispatch(Message.ShowFullCastChanged(showFullCast = true))
+
+                DetailsIntent.DismissVideoPlayer -> dispatch(Message.VideoSelected(videoKey = null))
+
+                DetailsIntent.DismissImageGallery -> dispatch(Message.ImageGalleryChanged(gallery = null))
             }
         }
 
@@ -156,6 +188,11 @@ class DetailsStoreFactory(
             is Message.SessionChanged -> copy(sessionState = msg.sessionState)
             is Message.FavoriteChanged -> copy(isFavorite = msg.isFavorite)
             is Message.FavoriteLoadingChanged -> copy(isFavoriteLoading = msg.isFavoriteLoading)
+            is Message.VideoSelected -> copy(selectedVideoKey = msg.videoKey)
+            is Message.ImageGalleryChanged -> copy(imageGallery = msg.gallery)
+            is Message.ShowFullCastChanged -> copy(
+                details = details.copy(showFullCast = msg.showFullCast),
+            )
         }
     }
 
@@ -171,6 +208,9 @@ class DetailsStoreFactory(
         data class SessionChanged(val sessionState: SessionState) : Message
         data class FavoriteChanged(val isFavorite: Boolean?) : Message
         data class FavoriteLoadingChanged(val isFavoriteLoading: Boolean) : Message
+        data class VideoSelected(val videoKey: String?) : Message
+        data class ImageGalleryChanged(val gallery: DetailsImageGallery?) : Message
+        data class ShowFullCastChanged(val showFullCast: Boolean) : Message
     }
 }
 
@@ -179,8 +219,76 @@ private fun MovieDetails.toModel(): DetailsModel =
         title = title,
         overview = overview,
         posterUrl = posterUrl,
+        backdropUrl = backdropUrl,
+        tagline = tagline,
         voteAverage = voteAverage,
         releaseDate = releaseDate,
         runtime = runtime,
         genres = genres,
+        originalTitle = originalTitle,
+        status = status,
+        originalLanguage = originalLanguage,
+        budget = budget.takeIf { it > 0 },
+        revenue = revenue.takeIf { it > 0 },
+        cast = cast.map(CastMember::toModel),
+        crew = crew.toKeyCrew(),
+        videos = videos.toDisplayVideos(),
+        backdrops = backdrops.map { DetailsImage(url = it.url) },
+        posters = posters.map { DetailsImage(url = it.url) },
+        recommendations = recommendations.map(Movie::toRecommendation),
     )
+
+private fun CastMember.toModel(): DetailsCastMember =
+    DetailsCastMember(
+        id = id,
+        name = name,
+        character = character,
+        profileUrl = profileUrl,
+    )
+
+private fun List<CrewMember>.toKeyCrew(): List<DetailsCrewMember> {
+    val directors = filter { it.job == "Director" }.map { it.name }.distinct()
+    val writers = filter { it.job in WRITER_JOBS }.map { it.name }.distinct()
+    return buildList {
+        if (directors.isNotEmpty()) {
+            add(DetailsCrewMember(name = directors.joinToString(", "), jobLabel = "Режиссёр"))
+        }
+        if (writers.isNotEmpty()) {
+            add(DetailsCrewMember(name = writers.joinToString(", "), jobLabel = "Сценарий"))
+        }
+    }
+}
+
+private fun List<Video>.toDisplayVideos(): List<DetailsVideo> {
+    val priority = listOf("Trailer", "Teaser", "Clip")
+    return sortedWith(
+        compareBy<Video> { video ->
+            val index = priority.indexOf(video.type)
+            if (index == -1) priority.size else index
+        }.thenByDescending { it.official },
+    ).map { video ->
+        DetailsVideo(
+            key = video.key,
+            name = video.name,
+            typeLabel = video.type.toVideoTypeLabel(),
+        )
+    }
+}
+
+private fun String.toVideoTypeLabel(): String =
+    when (this) {
+        "Trailer" -> "Трейлер"
+        "Teaser" -> "Тизер"
+        "Clip" -> "Клип"
+        else -> this
+    }
+
+private fun Movie.toRecommendation(): DetailsRecommendation =
+    DetailsRecommendation(
+        id = id,
+        title = title,
+        posterUrl = posterUrl,
+        voteAverage = voteAverage,
+    )
+
+private val WRITER_JOBS = setOf("Screenplay", "Writer", "Story")
