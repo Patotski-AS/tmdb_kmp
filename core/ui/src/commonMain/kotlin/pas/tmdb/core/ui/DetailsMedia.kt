@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -373,7 +374,7 @@ fun DetailsSectionTitle(
 @Composable
 fun RecommendationPosterRow(
     items: List<MediaPosterItem>,
-    onItemClick: (Int) -> Unit,
+    onItemClick: (index: Int) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp),
 ) {
@@ -382,10 +383,13 @@ fun RecommendationPosterRow(
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(items, key = { it.id }) { item ->
+        itemsIndexed(
+            items = items,
+            key = { index, item -> "${item.id}_$index" },
+        ) { index, item ->
             MediaPosterCell(
                 item = item,
-                onClick = { onItemClick(item.id) },
+                onClick = { onItemClick(index) },
                 modifier = Modifier.width(120.dp),
             )
         }

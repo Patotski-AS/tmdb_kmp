@@ -24,6 +24,8 @@ kotlin {
             implementation(projects.feature.details.impl)
             implementation(projects.feature.search.api)
             implementation(projects.feature.search.impl)
+            implementation(projects.feature.person.api)
+            implementation(projects.feature.person.impl)
 
             implementation(libs.koin.core)
             implementation(libs.koin.compose)

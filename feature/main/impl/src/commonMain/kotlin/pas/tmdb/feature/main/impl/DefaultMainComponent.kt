@@ -14,6 +14,7 @@ import pas.tmdb.feature.login.api.LoginComponent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaComponent
+import pas.tmdb.feature.person.api.PersonComponent
 
 class DefaultMainComponent(
     componentContext: ComponentContext,
@@ -33,7 +34,14 @@ class DefaultMainComponent(
         () -> Unit,
         () -> Unit,
         (Int, DetailsMediaType) -> Unit,
+        (Int) -> Unit,
     ) -> DetailsComponent,
+    private val personComponentFactory: (
+        ComponentContext,
+        Int,
+        () -> Unit,
+        (Int, DetailsMediaType) -> Unit,
+    ) -> PersonComponent,
 ) : MainComponent, ComponentContext by componentContext {
 
     private val navigation = StackNavigation<Config>()
@@ -57,8 +65,10 @@ class DefaultMainComponent(
                 mediaComponentFactory(
                     childContext,
                     { id, contentType ->
-                        contentType.toDetailsMediaType()?.let { mediaType ->
-                            onDetailsClick(id, mediaType)
+                        when (contentType) {
+                            ContentType.Movies -> onDetailsClick(id, DetailsMediaType.Movie)
+                            ContentType.Tv -> onDetailsClick(id, DetailsMediaType.Tv)
+                            ContentType.People -> onPersonClick(id)
                         }
                     },
                     { navigation.push(Config.Profile) },
@@ -80,12 +90,26 @@ class DefaultMainComponent(
                     { navigation.pop() },
                     { onNavigateToLogin() },
                     { id, mediaType -> onDetailsClick(id, mediaType) },
+                    { personId -> onPersonClick(personId) },
+                ),
+            )
+
+            is Config.Person -> MainComponent.Child.Person(
+                personComponentFactory(
+                    childContext,
+                    config.personId,
+                    { navigation.pop() },
+                    { id, mediaType -> onDetailsClick(id, mediaType) },
                 ),
             )
         }
 
     private fun onDetailsClick(mediaId: Int, mediaType: DetailsMediaType) {
         navigation.push(Config.Details(mediaId = mediaId, mediaType = mediaType))
+    }
+
+    private fun onPersonClick(personId: Int) {
+        navigation.push(Config.Person(personId = personId))
     }
 
     private fun onNavigateToLogin() {
@@ -106,12 +130,10 @@ class DefaultMainComponent(
             val mediaId: Int,
             val mediaType: DetailsMediaType = DetailsMediaType.Movie,
         ) : Config
+
+        @Serializable
+        data class Person(
+            val personId: Int,
+        ) : Config
     }
 }
-
-private fun ContentType.toDetailsMediaType(): DetailsMediaType? =
-    when (this) {
-        ContentType.Movies -> DetailsMediaType.Movie
-        ContentType.Tv -> DetailsMediaType.Tv
-        ContentType.People -> null
-    }

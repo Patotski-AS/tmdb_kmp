@@ -63,10 +63,10 @@ tmdb-kmp/
     ├── main/
     │   ├── api/
     │   └── impl/                           # shell: tabs, child stacks
-    ├── media/                              # каталог: фильмы / сериалы / актёры (фаза 8+, ранее discover)
+    ├── media/                              # каталог: фильмы / сериалы / люди (фаза 8+, ранее discover)
     │   ├── api/
     │   └── impl/
-    ├── person/                             # карточка актёра (фаза 11)
+    ├── person/                             # карточка персоны (фаза 11)
     │   ├── api/
     │   └── impl/
     ├── details/
@@ -252,7 +252,7 @@ RootComponent                              [:app]
      │    ├─ top: 🔍 Search (push)         [:feature:search]
      │    ├─ top: 👤 Profile (push)        [:feature:login]   ← фаза 9: избранное
      │    ├─ FAB: фильтры (bottom sheet)   ← фаза 8b
-     │    └─ bottom: Фильмы | Сериалы | Актёры  (ContentType)
+     │    └─ bottom: Фильмы | Сериалы | Люди  (ContentType)
      ├─ DetailsComponent (movie/tv)        [:feature:details]
      └─ PersonComponent                    [:feature:person]    ← фаза 11
 ```
@@ -285,7 +285,7 @@ RootComponent                              [:app]
 
 ### Главный экран (`feature:media`, фаза 8+)
 
-Один feature-модуль для **фильмов / сериалов / актёров** — общий grid UI, различие по `ContentType` в Store.
+Один feature-модуль для **фильмов / сериалов / людей** — общий grid UI, различие по `ContentType` в Store.
 
 #### Layout
 
@@ -295,7 +295,7 @@ RootComponent                              [:app]
 | Top-right | 👤 → push `LoginComponent` / профиль (фаза 9) |
 | Контент | `LazyVerticalGrid`, **2 колонки**, фиксированная высота ячейки, постер 2:3 + название |
 | FAB | Фильтры → bottom sheet (фаза 8b; только для фильмов) |
-| Bottom bar | **Фильмы** \| **Сериалы** \| **Актёры** (`ContentType`) |
+| Bottom bar | **Фильмы** \| **Сериалы** \| **Люди** (`ContentType`) |
 
 #### Ячейка сетки (`core:ui`)
 
@@ -317,9 +317,9 @@ RootComponent                              [:app]
 |-------------|---------|--------|
 | `Movies` | grid + пагинация | `feature:details` (фильм) |
 | `Tv` | grid + пагинация (фаза 10 ✅) | `feature:details` (сериал) |
-| `People` | grid, круглое фото (фаза 11) | `feature:person` |
+| `People` | grid, круглое фото (фаза 11 ✅) | `feature:person` |
 
-Фильмы и сериалы — **общий каркас** экрана деталей; актёр — **отдельный** модуль `feature:person`.
+Фильмы и сериалы — **общий каркас** экрана деталей; персона (актёр, режиссёр и др.) — **отдельный** модуль `feature:person`.
 
 #### Поток данных
 
@@ -345,7 +345,7 @@ MediaContent (Compose)
 Экран деталей (фаза 9b+): hero, описание, cast/crew, видео (YouTube embed / внешнее открытие), кадры и постеры с галереей, метаданные, рекомендации. Избранное — только для фильмов (account API).
 
 Label из media: `NavigateToDetails(id, mediaType)` → push в child stack `main-impl`.
-Сериал — тот же модуль `details`; актёр — `feature:person` (фаза 11).
+Сериал — тот же модуль `details`; персона — `feature:person` (фаза 11).
 
 ---
 
@@ -356,7 +356,7 @@ Label из media: `NavigateToDetails(id, mediaType)` → push в child stack `ma
 | Эра | Shell |
 |-----|-------|
 | Фазы 3–7 | Bottom: Discover / Search / Profile + stack Details |
-| Фаза 8+ | `MediaComponent` + bottom ContentType (Фильмы/Сериалы/Актёры); Search и Profile — push; stack Details / Person |
+| Фаза 8+ | `MediaComponent` + bottom ContentType (Фильмы/Сериалы/Люди); Search и Profile — push; stack Details / Person |
 
 ---
 
@@ -499,12 +499,12 @@ modules(
 ### Фаза 8 — Главный экран + Media (фильмы) ✅
 
 - [x] Переименовать `feature:discover` → `feature:media` (api/impl, пакеты `pas.tmdb.feature.media.*`)
-- [x] `main:impl`: новый shell — top bar (поиск / 👤), bottom bar (Фильмы / Сериалы / Актёры)
+- [x] `main:impl`: новый shell — top bar (поиск / 👤), bottom bar (Фильмы / Сериалы / Люди)
 - [x] Убрать нижние табы Search и Profile; Profile — **push** в child stack; поиск — **inline** в top bar
 - [x] `media:impl`: `LazyVerticalGrid` 2 колонки, фиксированная высота ячейки, бесконечная пагинация
 - [x] `core:ui`: `MediaPosterGrid` / `MediaPosterCell` (постер 2:3 + название, рамка, избранное)
 - [x] Данные: `GET /movie/popular`, `language=ru-RU`, `page`; `discover/movie` — подготовка фильтров
-- [x] Вкладки **Сериалы** и **Актёры** — заглушка «Скоро» (сериалы → фаза 10; актёры → фаза 11)
+- [x] Вкладки **Сериалы** и **Люди** — изначально заглушка «Скоро» (сериалы → фаза 10 ✅; люди → фаза 11 ✅)
 - [x] Shimmer / error / empty для grid; тема TMDB (`TmdbTheme`)
 - [x] Клик по фильму → `DetailsComponent`; сохранение скролла при возврате
 - [x] Избранное на постерах: рамка + звезда; синхронизация с API при старте (`FavoriteMoviesSynchronizer`)
@@ -518,8 +518,8 @@ modules(
 | 👤 | `NavigateToProfile` → push Login/Profile |
 | Клик по постеру | push Details |
 | Bottom: Фильмы | `ContentType.Movies` |
-| Bottom: Сериалы | `ContentType.Tv` (фаза 10) |
-| Bottom: Актёры | заглушка (фаза 11) |
+| Bottom: Сериалы | `ContentType.Tv` (фаза 10 ✅) |
+| Bottom: Люди | `ContentType.People` (фаза 11 ✅) |
 
 ### Фаза 8b — Фильтры (только фильмы) ✅
 
@@ -529,7 +529,7 @@ modules(
 - [x] При активных фильтрах: `GET /discover/movie` (`with_genres`, `sort_by`)
 - [x] Без фильтров: `GET /movie/popular` (как в фазе 8)
 - [x] Кнопки «Применить» / «Сбросить» (`ApplyFilters` / `ResetFilters`); сброс перезагружает popular
-- [x] FAB скрыт для вкладок Сериалы / Актёры
+- [x] FAB скрыт для вкладок Сериалы / Люди
 - [x] Тесты: `MediaStore` — фильтры, сброс, загрузка жанров, сортировка
 
 #### TMDB API (фаза 8b)
@@ -599,22 +599,27 @@ modules(
 | `GET /tv/{series_id}` | детали сериала |
 | `GET /search/tv` | поиск сериалов |
 
-### Фаза 11 — Актёры
+### Фаза 11 — Люди (персоны) ✅
 
-- [ ] Вкладка **Актёры** в `MediaComponent` — рабочий каталог
-- [ ] `GET /person/popular` — grid (круглое фото + имя), пагинация
-- [ ] `feature:person:api/impl` — экран актёра (`GET /person/{id}`, filmography)
-- [ ] `feature:search`: `GET /search/person`
-- [ ] Push `PersonComponent` из media/search (отдельно от movie Details)
-- [ ] FAB фильтров на вкладке Актёры — не в MVP (или только сортировка позже)
+TMDB `/person` — **не только актёры**: актёры, режиссёры, сценаристы, продюсеры и др.
+У каждой персоны есть `known_for_department` (`Acting`, `Directing`, `Writing`, `Production`, …).
+
+- [x] Вкладка **Люди** в `MediaComponent` — рабочий каталог (label в bottom bar: «Люди»)
+- [x] `GET /person/popular` — grid (круглое фото + имя; опционально подпись department), пагинация
+- [x] `feature:person:api/impl` — экран персоны (`GET /person/{id}`)
+- [x] Карточка: биография, «известен по», credits — **cast + crew** (роли и работы за кадром)
+- [x] Inline-поиск на вкладке Люди: `GET /search/person`
+- [x] Push `PersonComponent` из media / details cast (отдельно от movie/tv Details)
+- [x] Фильтр по department — **не в MVP** (у TMDB нет простого `discover/person` с `with_department`)
+- [x] Тесты: `MediaStore` (People), уникальные ключи в credit rows
 
 #### TMDB API (фаза 11)
 
 | Endpoint | Назначение |
 |----------|------------|
-| `GET /person/popular` | каталог актёров |
-| `GET /person/{person_id}` | карточка актёра |
-| `GET /search/person` | поиск актёров |
+| `GET /person/popular` | каталог популярных людей |
+| `GET /person/{person_id}` | карточка персоны (`append_to_response=combined_credits`) |
+| `GET /search/person` | поиск людей |
 
 ---
 
@@ -634,7 +639,8 @@ modules(
 | Первая фича | `feature:discover` (фазы 3–7) → `feature:media` (фаза 8+) |
 | Grid главной | 2 колонки, фикс. высота ячейки, постер + название, пагинация |
 | Фильтры | FAB + bottom sheet; MVP: жанр + сортировка (только фильмы, фаза 8b) |
-| Детали | Фильм и сериал — `feature:details`; актёр — `feature:person` |
+| Детали | Фильм и сериал — `feature:details`; персона — `feature:person` |
+| Люди | `ContentType.People`: актёры, режиссёры и др.; UI-label «Люди»; фильтр по department — после MVP |
 | Профиль | Полноэкранный push; избранное — сетка как на главной (фаза 9) |
 | Язык API | `ru-RU` |
 | Gradle | Convention plugins в `build-logic` |

@@ -23,6 +23,7 @@ import pas.tmdb.feature.login.api.title
 import pas.tmdb.feature.login.impl.LoginContent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.media.impl.MediaContent
+import pas.tmdb.feature.person.impl.PersonContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,13 @@ fun MainContent(
 
             is MainComponent.Child.Details -> {
                 DetailsContent(
+                    component = instance.component,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+
+            is MainComponent.Child.Person -> {
+                PersonContent(
                     component = instance.component,
                     modifier = Modifier.fillMaxSize(),
                 )

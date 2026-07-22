@@ -12,11 +12,14 @@ import pas.tmdb.auth.api.SessionRepository
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.FavoriteMoviesCache
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.PersonRepository
 import pas.tmdb.data.tmdb.api.TvRepository
 import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.PagedMovies
+import pas.tmdb.data.tmdb.api.model.Person
 import pas.tmdb.data.tmdb.api.model.TvShow
+import pas.tmdb.data.tmdb.api.model.toDepartmentLabel
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
 import pas.tmdb.feature.media.api.MediaGenre
@@ -29,6 +32,7 @@ class MediaStoreFactory(
     private val storeFactory: StoreFactory,
     private val movieRepository: MovieRepository,
     private val tvRepository: TvRepository,
+    private val personRepository: PersonRepository,
     private val favoriteMoviesCache: FavoriteMoviesCache,
     private val sessionRepository: SessionRepository,
 ) {
@@ -37,7 +41,7 @@ class MediaStoreFactory(
             name = "MediaStore",
             initialState = MediaState(),
             bootstrapper = BootstrapperImpl(favoriteMoviesCache, sessionRepository),
-            executorFactory = { ExecutorImpl(movieRepository, tvRepository) },
+            executorFactory = { ExecutorImpl(movieRepository, tvRepository, personRepository) },
             reducer = ReducerImpl,
         ) {}
 
@@ -64,6 +68,7 @@ class MediaStoreFactory(
     private class ExecutorImpl(
         private val movieRepository: MovieRepository,
         private val tvRepository: TvRepository,
+        private val personRepository: PersonRepository,
     ) : CoroutineExecutor<MediaIntent, Action, MediaState, Message, MediaLabel>() {
 
         private var searchJob: Job? = null
@@ -160,29 +165,26 @@ class MediaStoreFactory(
                     filters = MediaFilters(),
                     items = emptyList(),
                     page = 0,
-                    endReached = contentType == ContentType.People,
+                    endReached = false,
                     error = null,
                 ),
             )
             when (contentType) {
                 ContentType.Movies,
                 ContentType.Tv,
+                ContentType.People,
                 -> loadInitial(force = true)
-
-                ContentType.People -> Unit
             }
         }
 
         private fun loadInitial(force: Boolean = false) {
             val currentState = state()
-            if (currentState.contentType == ContentType.People) return
             if (!force && (currentState.items.isNotEmpty() || currentState.isLoading)) return
             loadPage(page = 1, append = false)
         }
 
         private fun loadMore() {
             val currentState = state()
-            if (currentState.contentType == ContentType.People) return
             if (currentState.isLoadingMore || currentState.endReached || currentState.isLoading) return
             loadPage(page = currentState.page + 1, append = true)
         }
@@ -199,7 +201,7 @@ class MediaStoreFactory(
                 when (currentState.contentType) {
                     ContentType.Movies -> loadMoviesPage(page, append, currentState)
                     ContentType.Tv -> loadTvPage(page, append, currentState)
-                    ContentType.People -> Unit
+                    ContentType.People -> loadPeoplePage(page, append, currentState)
                 }
 
                 when {
@@ -270,6 +272,36 @@ class MediaStoreFactory(
                     dispatch(
                         Message.ItemsUpdated(
                             items = paged.shows.map(TvShow::toItemModel),
+                            page = paged.page,
+                            endReached = paged.page >= paged.totalPages,
+                            append = append,
+                        ),
+                    )
+                }
+
+                is AppResult.Error -> {
+                    dispatch(Message.ErrorChanged(error = result.message))
+                    if (append) {
+                        publish(MediaLabel.ShowError(result.message))
+                    }
+                }
+            }
+        }
+
+        private suspend fun loadPeoplePage(page: Int, append: Boolean, currentState: MediaState) {
+            val query = currentState.searchQuery.trim()
+            val result = if (query.isNotEmpty()) {
+                personRepository.searchPeople(query, page)
+            } else {
+                personRepository.getPopularPeople(page)
+            }
+
+            when (result) {
+                is AppResult.Success -> {
+                    val paged = result.value
+                    dispatch(
+                        Message.ItemsUpdated(
+                            items = paged.people.map(Person::toItemModel),
                             page = paged.page,
                             endReached = paged.page >= paged.totalPages,
                             append = append,
@@ -389,4 +421,13 @@ private fun TvShow.toItemModel(): MediaItemModel =
         title = name,
         posterUrl = posterUrl,
         voteAverage = voteAverage,
+    )
+
+private fun Person.toItemModel(): MediaItemModel =
+    MediaItemModel(
+        id = id,
+        title = name,
+        posterUrl = profileUrl,
+        voteAverage = 0.0,
+        subtitle = knownForDepartment?.toDepartmentLabel(),
     )

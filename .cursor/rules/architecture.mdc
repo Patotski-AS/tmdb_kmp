@@ -12,13 +12,13 @@ app/                         # entry point, DI root, RootComponent
 core/                        # common, ui, navigation, network
 auth/                        # api + impl (сессия Guest/Authenticated)
 data/                        # config, storage, tmdb (каждый — api + impl)
-feature/                     # discover, details, search, login, main (api + impl)
+feature/                     # media, details, search, login, person, main (api + impl)
 build-logic/                 # convention plugins
 androidApp/, desktopApp/     # platform entry points
 ```
 
 Именование Gradle-модулей: `:layer:name:api` / `:layer:name:impl`  
-Примеры: `:feature:discover:api`, `:data:tmdb:impl`, `:auth:api`.
+Примеры: `:feature:media:api`, `:data:tmdb:impl`, `:auth:api`.
 
 ## Правила зависимостей (строго)
 
@@ -33,11 +33,12 @@ androidApp/, desktopApp/     # platform entry points
 ```
 app → все *:impl + core:*
 
-feature:discover:impl  → discover:api, auth:api, data:tmdb:api, core:ui
+feature:media:impl     → media:api, auth:api, data:tmdb:api, core:ui
 feature:details:impl   → details:api, auth:api, data:tmdb:api, core:ui
 feature:search:impl    → search:api, auth:api, data:tmdb:api, core:ui
 feature:login:impl     → login:api, auth:api, core:ui
-feature:main:impl      → main:api, discover:api, details:api, search:api, login:api, auth:api, core:ui
+feature:person:impl    → person:api, details:api, data:tmdb:api, core:ui
+feature:main:impl      → main:api, media:api, details:api, search:api, login:api, person:api, auth:api, core:ui
 
 auth:impl              → auth:api, data:storage:api, data:tmdb:api, core:network
 data:tmdb:impl         → tmdb:api, config:api, auth:api, core:network
@@ -50,19 +51,20 @@ data:config:impl       → config:api
 ```
 RootComponent [:app]
 └─ MainComponent [:feature:main]          # всегда, без зон
-     ├─ DiscoverComponent (tab)
-     ├─ SearchComponent (tab)
-     ├─ ProfileComponent (tab)            # Guest: login; Authenticated: профиль
-     └─ DetailsComponent (child stack)
+     ├─ MediaComponent                    # Фильмы | Сериалы | Люди
+     ├─ DetailsComponent (child stack)    # movie / tv
+     ├─ PersonComponent (child stack)     # персона
+     └─ Profile / Login (push)
 ```
 
 - Root **не** переключает Unauthorized/Authorized — каталог доступен в `Guest`.
 - Auth влияет на **session state** и account-фичи, не на корневую навигацию.
 - Logout: `sessionRepository.logout()` → `Guest`, Main остаётся.
+- Поиск — inline в top bar Media; профиль — push.
 
 ## Main — тонкий shell
 
-`feature:main:impl` содержит только bottom navigation + tab navigator + child stack для details. Каждый таб — отдельный feature-модуль. Без бизнес-логики.
+`feature:main:impl` содержит только child stack (Media / Details / Person / Profile). Без бизнес-логики.
 
 ## Новые модули
 

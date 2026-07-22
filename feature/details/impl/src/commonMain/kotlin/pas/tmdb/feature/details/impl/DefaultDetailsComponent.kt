@@ -30,6 +30,7 @@ internal class DefaultDetailsComponent(
     private val onBack: () -> Unit,
     private val onNavigateToLogin: () -> Unit,
     private val onNavigateToDetails: (Int, DetailsMediaType) -> Unit,
+    private val onNavigateToPerson: (Int) -> Unit,
 ) : DetailsComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -53,9 +54,7 @@ internal class DefaultDetailsComponent(
                 when (label) {
                     DetailsLabel.NavigateBack -> onBack()
                     DetailsLabel.NavigateToLogin -> onNavigateToLogin()
-                    is DetailsLabel.NavigateToPerson -> {
-                        _externalUrlEvents.tryEmit("https://www.themoviedb.org/person/${label.personId}")
-                    }
+                    is DetailsLabel.NavigateToPerson -> onNavigateToPerson(label.personId)
                     is DetailsLabel.NavigateToDetails -> onNavigateToDetails(label.id, label.mediaType)
                     is DetailsLabel.ShowError -> Unit
                 }

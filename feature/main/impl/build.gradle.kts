@@ -9,6 +9,7 @@ kotlin {
             implementation(projects.feature.media.api)
             implementation(projects.feature.details.api)
             implementation(projects.feature.login.api)
+            implementation(projects.feature.person.api)
             implementation(projects.core.ui)
         }
     }

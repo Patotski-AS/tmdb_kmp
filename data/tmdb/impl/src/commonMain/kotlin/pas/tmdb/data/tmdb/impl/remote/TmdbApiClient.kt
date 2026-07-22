@@ -19,6 +19,8 @@ import pas.tmdb.data.tmdb.impl.dto.FavoriteRequestDto
 import pas.tmdb.data.tmdb.impl.dto.MovieAccountStatesDto
 import pas.tmdb.data.tmdb.impl.dto.MovieDetailsDto
 import pas.tmdb.data.tmdb.impl.dto.PopularMoviesResponseDto
+import pas.tmdb.data.tmdb.impl.dto.PersonDetailsDto
+import pas.tmdb.data.tmdb.impl.dto.PopularPeopleResponseDto
 import pas.tmdb.data.tmdb.impl.dto.PopularTvResponseDto
 import pas.tmdb.data.tmdb.impl.dto.TmdbErrorResponseDto
 import pas.tmdb.data.tmdb.impl.dto.TvShowDetailsDto
@@ -58,6 +60,26 @@ internal class TmdbApiClient(
 
     suspend fun searchTvShows(query: String, page: Int): PopularTvResponseDto =
         tmdbGet("${config.baseUrl}search/tv") {
+            parameter("language", LANGUAGE)
+            parameter("query", query)
+            parameter("page", page)
+            parameter("include_adult", false)
+        }
+
+    suspend fun getPopularPeople(page: Int): PopularPeopleResponseDto =
+        tmdbGet("${config.baseUrl}person/popular") {
+            parameter("language", LANGUAGE)
+            parameter("page", page)
+        }
+
+    suspend fun getPersonDetails(personId: Int): PersonDetailsDto =
+        tmdbGet("${config.baseUrl}person/$personId") {
+            parameter("language", LANGUAGE)
+            parameter("append_to_response", "combined_credits")
+        }
+
+    suspend fun searchPeople(query: String, page: Int): PopularPeopleResponseDto =
+        tmdbGet("${config.baseUrl}search/person") {
             parameter("language", LANGUAGE)
             parameter("query", query)
             parameter("page", page)

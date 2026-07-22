@@ -7,6 +7,7 @@ import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.login.api.LoginComponent
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.media.api.MediaComponent
+import pas.tmdb.feature.person.api.PersonComponent
 
 val mainFeatureModule = module {
     factory<MainComponent> { (componentContext: ComponentContext) ->
@@ -27,6 +28,7 @@ val mainFeatureModule = module {
                     onBack,
                     onNavigateToLogin,
                     onNavigateToDetails,
+                    onNavigateToPerson,
                 ->
                 get<DetailsComponent> {
                     parametersOf(
@@ -36,7 +38,18 @@ val mainFeatureModule = module {
                         onBack,
                         onNavigateToLogin,
                         onNavigateToDetails,
+                        onNavigateToPerson,
                     )
+                }
+            },
+            personComponentFactory = {
+                    childContext,
+                    personId,
+                    onBack,
+                    onNavigateToDetails,
+                ->
+                get<PersonComponent> {
+                    parametersOf(childContext, personId, onBack, onNavigateToDetails)
                 }
             },
         )

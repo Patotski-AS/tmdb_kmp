@@ -22,6 +22,7 @@ import pas.tmdb.feature.media.impl.mediaFeatureModule
 import pas.tmdb.feature.login.impl.loginFeatureModule
 import pas.tmdb.feature.main.api.MainComponent
 import pas.tmdb.feature.main.impl.mainFeatureModule
+import pas.tmdb.feature.person.impl.personFeatureModule
 import pas.tmdb.feature.search.impl.searchFeatureModule
 import org.koin.compose.KoinApplication
 import org.koin.core.parameter.parametersOf
@@ -41,6 +42,7 @@ fun App() {
             detailsFeatureModule,
             searchFeatureModule,
             loginFeatureModule,
+            personFeatureModule,
             mainFeatureModule,
             appModule,
         )

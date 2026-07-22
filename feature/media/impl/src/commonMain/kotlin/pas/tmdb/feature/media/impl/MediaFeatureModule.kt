@@ -15,6 +15,7 @@ val mediaFeatureModule = module {
             storeFactory = get(),
             movieRepository = get(),
             tvRepository = get(),
+            personRepository = get(),
             favoriteMoviesCache = get(),
             sessionRepository = get(),
         )
