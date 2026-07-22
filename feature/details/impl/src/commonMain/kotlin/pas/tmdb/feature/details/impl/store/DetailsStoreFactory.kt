@@ -103,8 +103,6 @@ class DetailsStoreFactory(
 
                 is DetailsIntent.OnCastMemberClick -> publish(DetailsLabel.NavigateToPerson(intent.personId))
 
-                is DetailsIntent.OnVideoClick -> dispatch(Message.VideoSelected(intent.videoKey))
-
                 is DetailsIntent.OnImageClick -> dispatch(
                     Message.ImageGalleryChanged(
                         DetailsImageGallery(
@@ -122,8 +120,6 @@ class DetailsStoreFactory(
                 )
 
                 DetailsIntent.ShowFullCast -> dispatch(Message.ShowFullCastChanged(showFullCast = true))
-
-                DetailsIntent.DismissVideoPlayer -> dispatch(Message.VideoSelected(videoKey = null))
 
                 DetailsIntent.DismissImageGallery -> dispatch(Message.ImageGalleryChanged(gallery = null))
             }
@@ -214,7 +210,6 @@ class DetailsStoreFactory(
             is Message.SessionChanged -> copy(sessionState = msg.sessionState)
             is Message.FavoriteChanged -> copy(isFavorite = msg.isFavorite)
             is Message.FavoriteLoadingChanged -> copy(isFavoriteLoading = msg.isFavoriteLoading)
-            is Message.VideoSelected -> copy(selectedVideoKey = msg.videoKey)
             is Message.ImageGalleryChanged -> copy(imageGallery = msg.gallery)
             is Message.ShowFullCastChanged -> copy(
                 details = details.copy(showFullCast = msg.showFullCast),
@@ -234,7 +229,6 @@ class DetailsStoreFactory(
         data class SessionChanged(val sessionState: SessionState) : Message
         data class FavoriteChanged(val isFavorite: Boolean?) : Message
         data class FavoriteLoadingChanged(val isFavoriteLoading: Boolean) : Message
-        data class VideoSelected(val videoKey: String?) : Message
         data class ImageGalleryChanged(val gallery: DetailsImageGallery?) : Message
         data class ShowFullCastChanged(val showFullCast: Boolean) : Message
     }

@@ -10,7 +10,7 @@ actual fun rememberOpenYoutubeVideoExternally(): (String) -> Unit =
     remember {
         { videoKey ->
             if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().browse(URI(youtubeEmbedUrl(videoKey)))
+                Desktop.getDesktop().browse(URI(youtubeWatchUrl(videoKey)))
             }
         }
     }

@@ -19,7 +19,6 @@ activity-compose = "1.10.1"
 datastore = "1.1.4"
 security-crypto = "1.1.0-alpha06"
 browser = "1.8.0"
-androidYoutubePlayer = "12.1.0"
 coil = "3.1.0"
 
 [libraries]
@@ -68,7 +67,6 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
-android-youtube-player = { module = "com.pierfrancescosoffritti.androidyoutubeplayer:core", version.ref = "androidYoutubePlayer" }
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }

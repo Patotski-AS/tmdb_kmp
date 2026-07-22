@@ -3,6 +3,7 @@ package pas.tmdb.feature.media.impl
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import pas.tmdb.core.ui.PersonGrid
 import pas.tmdb.core.ui.PersonGridItem
 import pas.tmdb.core.ui.PersonGridLoadingState
 import pas.tmdb.core.ui.ProfileAvatar
+import pas.tmdb.core.ui.TmdbAttribution
 import pas.tmdb.core.ui.TmdbErrorState
 import pas.tmdb.core.ui.TmdbMessageState
 import pas.tmdb.auth.api.SessionState
@@ -60,7 +62,7 @@ fun MediaContent(
         modifier = modifier,
         containerColor = Color.Transparent,
         floatingActionButton = {
-            if (model.contentType == ContentType.Movies) {
+            if (model.contentType != ContentType.People) {
                 FloatingActionButton(
                     onClick = { showFilterSheet = true },
                     shape = CircleShape,
@@ -105,54 +107,57 @@ fun MediaContent(
             }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ) {
-                NavigationBarItem(
-                    selected = model.contentType == ContentType.Movies,
-                    onClick = {
-                        component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.Movies))
-                    },
-                    icon = { Text("🎬") },
-                    label = { Text("Фильмы") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                )
-                NavigationBarItem(
-                    selected = model.contentType == ContentType.Tv,
-                    onClick = {
-                        component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.Tv))
-                    },
-                    icon = { Text("📺") },
-                    label = { Text("Сериалы") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                )
-                NavigationBarItem(
-                    selected = model.contentType == ContentType.People,
-                    onClick = {
-                        component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.People))
-                    },
-                    icon = { Text("🎭") },
-                    label = { Text("Люди") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                )
+            Column {
+                TmdbAttribution(compact = true)
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ) {
+                    NavigationBarItem(
+                        selected = model.contentType == ContentType.Movies,
+                        onClick = {
+                            component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.Movies))
+                        },
+                        icon = { Text("🎬") },
+                        label = { Text("Фильмы") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    )
+                    NavigationBarItem(
+                        selected = model.contentType == ContentType.Tv,
+                        onClick = {
+                            component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.Tv))
+                        },
+                        icon = { Text("📺") },
+                        label = { Text("Сериалы") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    )
+                    NavigationBarItem(
+                        selected = model.contentType == ContentType.People,
+                        onClick = {
+                            component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.People))
+                        },
+                        icon = { Text("🎭") },
+                        label = { Text("Люди") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    )
+                }
             }
         },
     ) { padding ->
@@ -176,6 +181,7 @@ fun MediaContent(
 
     if (showFilterSheet) {
         MediaFilterSheet(
+            contentType = model.contentType,
             genres = model.genres,
             currentFilters = model.filters,
             onApply = { filters -> component.onIntent(MediaIntent.ApplyFilters(filters)) },

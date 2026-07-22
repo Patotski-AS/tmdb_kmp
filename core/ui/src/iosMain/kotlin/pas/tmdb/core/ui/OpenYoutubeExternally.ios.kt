@@ -8,6 +8,6 @@ import androidx.compose.ui.platform.LocalUriHandler
 actual fun rememberOpenYoutubeVideoExternally(): (String) -> Unit {
     val uriHandler = LocalUriHandler.current
     return remember(uriHandler) {
-        { videoKey -> uriHandler.openUri(youtubeEmbedUrl(videoKey)) }
+        { videoKey -> uriHandler.openUri(youtubeWatchUrl(videoKey)) }
     }
 }

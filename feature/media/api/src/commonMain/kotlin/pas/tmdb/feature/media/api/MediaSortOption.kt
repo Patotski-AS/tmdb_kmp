@@ -1,16 +1,33 @@
 package pas.tmdb.feature.media.api
 
 enum class MediaSortOption(
-    val sortBy: String,
     val label: String,
 ) {
-    Popularity(sortBy = "popularity.desc", label = "По популярности"),
-    ReleaseDate(sortBy = "primary_release_date.desc", label = "По дате выхода"),
-    VoteAverage(sortBy = "vote_average.desc", label = "По оценке"),
+    Popularity(label = "По популярности"),
+    ReleaseDate(label = "По дате выхода"),
+    VoteAverage(label = "По оценке"),
     ;
+
+    fun sortBy(contentType: ContentType): String =
+        when (this) {
+            Popularity -> "popularity.desc"
+            ReleaseDate -> when (contentType) {
+                ContentType.Movies -> "primary_release_date.desc"
+                ContentType.Tv -> "first_air_date.desc"
+                ContentType.People -> "popularity.desc"
+            }
+            VoteAverage -> "vote_average.desc"
+        }
 
     companion object {
         fun fromSortBy(sortBy: String?): MediaSortOption? =
-            entries.firstOrNull { it.sortBy == sortBy }
+            when (sortBy) {
+                "popularity.desc" -> Popularity
+                "primary_release_date.desc",
+                "first_air_date.desc",
+                -> ReleaseDate
+                "vote_average.desc" -> VoteAverage
+                else -> null
+            }
     }
 }

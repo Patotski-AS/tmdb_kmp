@@ -3,9 +3,9 @@ package pas.tmdb.feature.main.impl
 import com.arkivanov.decompose.ComponentContext
 import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.router.stack.StackNavigation
+import com.arkivanov.decompose.router.stack.bringToFront
 import com.arkivanov.decompose.router.stack.childStack
 import com.arkivanov.decompose.router.stack.pop
-import com.arkivanov.decompose.router.stack.push
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
 import pas.tmdb.feature.details.api.DetailsComponent
@@ -71,7 +71,7 @@ class DefaultMainComponent(
                             ContentType.People -> onPersonClick(id)
                         }
                     },
-                    { navigation.push(Config.Profile) },
+                    { navigation.bringToFront(Config.Profile) },
                 ),
             )
 
@@ -105,16 +105,15 @@ class DefaultMainComponent(
         }
 
     private fun onDetailsClick(mediaId: Int, mediaType: DetailsMediaType) {
-        navigation.push(Config.Details(mediaId = mediaId, mediaType = mediaType))
+        navigation.bringToFront(Config.Details(mediaId = mediaId, mediaType = mediaType))
     }
 
     private fun onPersonClick(personId: Int) {
-        navigation.push(Config.Person(personId = personId))
+        navigation.bringToFront(Config.Person(personId = personId))
     }
 
     private fun onNavigateToLogin() {
-        navigation.pop()
-        navigation.push(Config.Profile)
+        navigation.bringToFront(Config.Profile)
     }
 
     @Serializable

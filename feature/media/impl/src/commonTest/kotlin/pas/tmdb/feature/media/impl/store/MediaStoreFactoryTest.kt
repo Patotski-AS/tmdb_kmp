@@ -322,6 +322,80 @@ class MediaStoreFactoryTest {
     }
 
     @Test
+    fun applyFilters_tv_usesDiscoverEndpoint() = runTest {
+        val discoverResult = PagedTvShows(
+            shows = listOf(
+                TvShow(
+                    id = 200,
+                    name = "Drama Show",
+                    overview = "",
+                    posterUrl = null,
+                    voteAverage = 8.1,
+                    firstAirDate = "2020",
+                ),
+            ),
+            page = 1,
+            totalPages = 1,
+            totalResults = 1,
+        )
+        val tvRepository = FakeTvRepository(
+            discoverTvShows = AppResult.Success(discoverResult),
+        )
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = FakeMovieRepository(),
+            tvRepository = tvRepository,
+            personRepository = FakePersonRepository(),
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
+        ).create()
+
+        store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
+        store.accept(MediaIntent.OnContentTypeSelected(ContentType.Tv))
+        store.states
+            .filter { it.contentType == ContentType.Tv && !it.isLoading }
+            .first()
+
+        store.accept(MediaIntent.ApplyFilters(MediaFilters(genreId = 18)))
+
+        val filteredState = store.states
+            .filter {
+                it.contentType == ContentType.Tv &&
+                    !it.isLoading &&
+                    it.filters.genreId == 18 &&
+                    it.items.isNotEmpty()
+            }
+            .first()
+
+        assertEquals("Drama Show", filteredState.items.first().title)
+        assertEquals(1, tvRepository.discoverCalls)
+        assertEquals(18, tvRepository.lastDiscoverGenreId)
+    }
+
+    @Test
+    fun loadGenres_populatesTvGenreList() = runTest {
+        val tvRepository = FakeTvRepository()
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = FakeMovieRepository(),
+            tvRepository = tvRepository,
+            personRepository = FakePersonRepository(),
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
+        ).create()
+
+        store.accept(MediaIntent.OnContentTypeSelected(ContentType.Tv))
+
+        val state = store.states
+            .filter { it.contentType == ContentType.Tv && it.tvGenres.isNotEmpty() }
+            .first()
+
+        assertEquals(2, state.genres.size)
+        assertEquals("Драма", state.genres.first().name)
+        assertEquals(1, tvRepository.genreCalls)
+    }
+
+    @Test
     fun contentTypeSelected_loadsPopularPeople() = runTest {
         val people = PagedPeople(
             people = listOf(

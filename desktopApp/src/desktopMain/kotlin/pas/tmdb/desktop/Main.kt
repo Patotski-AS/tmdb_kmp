@@ -7,7 +7,7 @@ import pas.tmdb.app.App
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "TMDB KMP",
+        title = "TMDB",
     ) {
         App()
     }

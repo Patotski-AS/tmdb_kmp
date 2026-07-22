@@ -78,30 +78,6 @@ class DetailsStoreFactoryTest {
     }
 
     @Test
-    fun onVideoClick_setsSelectedVideoKey() = runTest {
-        val store = createStore()
-        store.states.filter { it.details.title != null }.first()
-
-        store.accept(DetailsIntent.OnVideoClick("SUXWAEX2jlg"))
-
-        val state = store.states.filter { it.selectedVideoKey == "SUXWAEX2jlg" }.first()
-        assertEquals("SUXWAEX2jlg", state.selectedVideoKey)
-    }
-
-    @Test
-    fun dismissVideoPlayer_clearsSelectedVideoKey() = runTest {
-        val store = createStore()
-        store.states.filter { it.details.title != null }.first()
-        store.accept(DetailsIntent.OnVideoClick("SUXWAEX2jlg"))
-        store.states.filter { it.selectedVideoKey != null }.first()
-
-        store.accept(DetailsIntent.DismissVideoPlayer)
-
-        val state = store.states.filter { it.selectedVideoKey == null }.first()
-        assertNull(state.selectedVideoKey)
-    }
-
-    @Test
     fun showFullCast_expandsVisibleCast() = runTest {
         val extendedCast = (1..20).map { index ->
             CastMember(

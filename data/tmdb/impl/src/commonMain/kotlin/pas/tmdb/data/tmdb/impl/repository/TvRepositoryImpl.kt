@@ -2,6 +2,7 @@ package pas.tmdb.data.tmdb.impl.repository
 
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.TvRepository
+import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.ImageConfiguration
 import pas.tmdb.data.tmdb.api.model.PagedTvShows
 import pas.tmdb.data.tmdb.api.model.TvShowDetails
@@ -15,6 +16,11 @@ internal class TvRepositoryImpl(
 
     private var cachedImageConfiguration: ImageConfiguration? = null
 
+    override suspend fun getTvGenres(): AppResult<List<Genre>> =
+        runCatchingAppResult {
+            apiClient.getTvGenres().toDomain()
+        }
+
     override suspend fun getPopularTvShows(page: Int): AppResult<PagedTvShows> =
         runCatchingAppResult {
             val imageConfiguration = requireImageConfiguration()
@@ -25,6 +31,17 @@ internal class TvRepositoryImpl(
         runCatchingAppResult {
             val imageConfiguration = requireImageConfiguration()
             apiClient.searchTvShows(query, page).toDomain(imageConfiguration)
+        }
+
+    override suspend fun discoverTvShows(
+        genreId: Int?,
+        sortBy: String?,
+        page: Int,
+    ): AppResult<PagedTvShows> =
+        runCatchingAppResult {
+            val imageConfiguration = requireImageConfiguration()
+            apiClient.discoverTvShows(page = page, genreId = genreId, sortBy = sortBy)
+                .toDomain(imageConfiguration)
         }
 
     override suspend fun getTvShowDetails(tvId: Int): AppResult<TvShowDetails> =

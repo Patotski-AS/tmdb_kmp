@@ -10,7 +10,6 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.browser)
-            implementation(libs.android.youtube.player)
         }
     }
 }

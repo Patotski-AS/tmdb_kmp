@@ -17,6 +17,7 @@ import pas.tmdb.data.tmdb.api.TvRepository
 import pas.tmdb.data.tmdb.api.model.Genre
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.PagedMovies
+import pas.tmdb.data.tmdb.api.model.PagedTvShows
 import pas.tmdb.data.tmdb.api.model.Person
 import pas.tmdb.data.tmdb.api.model.TvShow
 import pas.tmdb.data.tmdb.api.model.toDepartmentLabel
@@ -135,13 +136,11 @@ class MediaStoreFactory(
 
         private fun onFiltersApplied(filters: MediaFilters) {
             dispatch(Message.FiltersChanged(filters))
-            if (state().contentType != ContentType.Movies) return
             loadInitial(force = true)
         }
 
         private fun onFiltersReset() {
             dispatch(Message.FiltersChanged(MediaFilters()))
-            if (state().contentType != ContentType.Movies) return
             loadInitial(force = true)
         }
 
@@ -149,7 +148,14 @@ class MediaStoreFactory(
             scope.launch {
                 when (val result = movieRepository.getMovieGenres()) {
                     is AppResult.Success ->
-                        dispatch(Message.GenresLoaded(result.value.map(Genre::toMediaGenre)))
+                        dispatch(Message.MovieGenresLoaded(result.value.map(Genre::toMediaGenre)))
+                    is AppResult.Error -> Unit
+                }
+            }
+            scope.launch {
+                when (val result = tvRepository.getTvGenres()) {
+                    is AppResult.Success ->
+                        dispatch(Message.TvGenresLoaded(result.value.map(Genre::toMediaGenre)))
                     is AppResult.Error -> Unit
                 }
             }
@@ -260,10 +266,27 @@ class MediaStoreFactory(
 
         private suspend fun loadTvPage(page: Int, append: Boolean, currentState: MediaState) {
             val query = currentState.searchQuery.trim()
-            val result = if (query.isNotEmpty()) {
-                tvRepository.searchTvShows(query, page)
-            } else {
-                tvRepository.getPopularTvShows(page)
+            val filters = currentState.filters
+
+            val result = when {
+                query.isNotEmpty() && filters.isActive ->
+                    tvRepository.discoverTvShows(
+                        genreId = filters.genreId,
+                        sortBy = filters.sortBy,
+                        page = page,
+                    ).filterTvShowsByName(query)
+
+                query.isNotEmpty() ->
+                    tvRepository.searchTvShows(query, page)
+
+                filters.isActive ->
+                    tvRepository.discoverTvShows(
+                        genreId = filters.genreId,
+                        sortBy = filters.sortBy,
+                        page = page,
+                    )
+
+                else -> tvRepository.getPopularTvShows(page)
             }
 
             when (result) {
@@ -326,7 +349,8 @@ class MediaStoreFactory(
             is Message.ErrorChanged -> copy(error = msg.error)
             is Message.SearchQueryChanged -> copy(searchQuery = msg.query)
             is Message.FiltersChanged -> copy(filters = msg.filters)
-            is Message.GenresLoaded -> copy(genres = msg.genres)
+            is Message.MovieGenresLoaded -> copy(movieGenres = msg.genres)
+            is Message.TvGenresLoaded -> copy(tvGenres = msg.genres)
             is Message.FavoriteIdsChanged -> copy(favoriteIds = msg.favoriteIds)
             is Message.SessionChanged -> copy(sessionState = msg.sessionState)
             is Message.ContentTypeChanged -> copy(
@@ -361,7 +385,8 @@ class MediaStoreFactory(
         data class ErrorChanged(val error: String?) : Message
         data class SearchQueryChanged(val query: String) : Message
         data class FiltersChanged(val filters: MediaFilters) : Message
-        data class GenresLoaded(val genres: List<MediaGenre>) : Message
+        data class MovieGenresLoaded(val genres: List<MediaGenre>) : Message
+        data class TvGenresLoaded(val genres: List<MediaGenre>) : Message
         data class FavoriteIdsChanged(val favoriteIds: Set<Int>) : Message
         data class SessionChanged(val sessionState: pas.tmdb.auth.api.SessionState) : Message
         data class ContentTypeChanged(
@@ -396,6 +421,24 @@ private fun AppResult<PagedMovies>.filterMoviesByTitle(query: String): AppResult
             AppResult.Success(
                 value.copy(
                     movies = filtered,
+                    totalResults = filtered.size,
+                ),
+            )
+        }
+
+        is AppResult.Error -> this
+    }
+
+private fun AppResult<PagedTvShows>.filterTvShowsByName(query: String): AppResult<PagedTvShows> =
+    when (this) {
+        is AppResult.Success -> {
+            val normalizedQuery = query.lowercase()
+            val filtered = value.shows.filter { show ->
+                show.name.lowercase().contains(normalizedQuery)
+            }
+            AppResult.Success(
+                value.copy(
+                    shows = filtered,
                     totalResults = filtered.size,
                 ),
             )

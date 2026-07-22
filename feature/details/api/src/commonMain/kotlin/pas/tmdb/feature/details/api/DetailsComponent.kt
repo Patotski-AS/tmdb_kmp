@@ -74,7 +74,6 @@ data class DetailsModel(
     val backdrops: List<DetailsImage> = emptyList(),
     val posters: List<DetailsImage> = emptyList(),
     val recommendations: List<DetailsRecommendation> = emptyList(),
-    val selectedVideoKey: String? = null,
     val imageGallery: DetailsImageGallery? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -89,13 +88,11 @@ sealed interface DetailsIntent {
     data object Back : DetailsIntent
     data object ToggleFavorite : DetailsIntent
     data class OnCastMemberClick(val personId: Int) : DetailsIntent
-    data class OnVideoClick(val videoKey: String) : DetailsIntent
     data class OnImageClick(
         val section: DetailsImageGallerySection,
         val index: Int,
     ) : DetailsIntent
     data class OnRecommendationClick(val id: Int) : DetailsIntent
     data object ShowFullCast : DetailsIntent
-    data object DismissVideoPlayer : DetailsIntent
     data object DismissImageGallery : DetailsIntent
 }

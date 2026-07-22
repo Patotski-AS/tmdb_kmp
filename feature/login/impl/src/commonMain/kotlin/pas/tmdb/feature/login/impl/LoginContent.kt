@@ -40,6 +40,7 @@ import pas.tmdb.auth.api.SessionState
 import pas.tmdb.core.ui.MediaPosterGrid
 import pas.tmdb.core.ui.MediaPosterItem
 import pas.tmdb.core.ui.ProfileAvatar
+import pas.tmdb.core.ui.TmdbAttribution
 import pas.tmdb.feature.login.api.FavoriteMovieModel
 import pas.tmdb.feature.login.api.LoginChild
 import pas.tmdb.feature.login.api.LoginComponent
@@ -167,6 +168,10 @@ private fun ProfileMenuScreen(
         LogoutMenuRow(
             isLoading = isLoading,
             onLogout = onLogout,
+        )
+
+        TmdbAttribution(
+            modifier = Modifier.padding(top = 24.dp, bottom = 16.dp),
         )
     }
 }
@@ -521,6 +526,10 @@ private fun GuestContent(
                 }
             }
         }
+
+        TmdbAttribution(
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 

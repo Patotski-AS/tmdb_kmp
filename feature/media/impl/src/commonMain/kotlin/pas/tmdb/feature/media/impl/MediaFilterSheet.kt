@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
 import pas.tmdb.feature.media.api.MediaGenre
 import pas.tmdb.feature.media.api.MediaSortOption
@@ -31,6 +32,7 @@ import pas.tmdb.feature.media.api.MediaSortOption
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MediaFilterSheet(
+    contentType: ContentType,
     genres: List<MediaGenre>,
     currentFilters: MediaFilters,
     onApply: (MediaFilters) -> Unit,
@@ -65,58 +67,19 @@ internal fun MediaFilterSheet(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { genreMenuExpanded = true },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = "Жанр: $selectedGenreLabel",
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-                DropdownMenu(
-                    expanded = genreMenuExpanded,
-                    onDismissRequest = { genreMenuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Все жанры") },
-                        onClick = {
-                            draftGenreId = null
-                            genreMenuExpanded = false
-                        },
-                    )
-                    genres.forEach { genre ->
-                        DropdownMenuItem(
-                            text = { Text(genre.name) },
-                            onClick = {
-                                draftGenreId = genre.id
-                                genreMenuExpanded = false
-                            },
-                        )
-                    }
-                }
-            }
+            GenreDropdown(
+                selectedLabel = selectedGenreLabel,
+                genres = genres,
+                expanded = genreMenuExpanded,
+                onExpandedChange = { genreMenuExpanded = it },
+                onGenreSelected = { draftGenreId = it },
+            )
 
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Сортировка",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                SortOptionRow(
-                    label = "По умолчанию",
-                    selected = draftSortBy == null,
-                    onClick = { draftSortBy = null },
-                )
-                MediaSortOption.entries.forEach { option ->
-                    SortOptionRow(
-                        label = option.label,
-                        selected = draftSortBy == option.sortBy,
-                        onClick = { draftSortBy = option.sortBy },
-                    )
-                }
-            }
+            SortSection(
+                contentType = contentType,
+                draftSortBy = draftSortBy,
+                onSortByChange = { draftSortBy = it },
+            )
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -146,6 +109,76 @@ internal fun MediaFilterSheet(
                     Text("Применить")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun GenreDropdown(
+    selectedLabel: String,
+    genres: List<MediaGenre>,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onGenreSelected: (Int?) -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = { onExpandedChange(true) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                text = "Жанр: $selectedLabel",
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
+        ) {
+            DropdownMenuItem(
+                text = { Text("Все жанры") },
+                onClick = {
+                    onGenreSelected(null)
+                    onExpandedChange(false)
+                },
+            )
+            genres.forEach { genre ->
+                DropdownMenuItem(
+                    text = { Text(genre.name) },
+                    onClick = {
+                        onGenreSelected(genre.id)
+                        onExpandedChange(false)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SortSection(
+    contentType: ContentType,
+    draftSortBy: String?,
+    onSortByChange: (String?) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = "Сортировка",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SortOptionRow(
+            label = "По умолчанию",
+            selected = draftSortBy == null,
+            onClick = { onSortByChange(null) },
+        )
+        MediaSortOption.entries.forEach { option ->
+            val sortBy = option.sortBy(contentType)
+            SortOptionRow(
+                label = option.label,
+                selected = draftSortBy == sortBy,
+                onClick = { onSortByChange(sortBy) },
+            )
         }
     }
 }

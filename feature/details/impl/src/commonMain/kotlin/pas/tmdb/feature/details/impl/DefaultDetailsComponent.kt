@@ -79,7 +79,6 @@ private fun DetailsState.toModel(): DetailsModel =
             sessionState = sessionState,
             isFavorite = isFavorite,
             isFavoriteLoading = isFavoriteLoading,
-            selectedVideoKey = selectedVideoKey,
             imageGallery = imageGallery,
         )
     } else {
@@ -90,7 +89,6 @@ private fun DetailsState.toModel(): DetailsModel =
             sessionState = sessionState,
             isFavorite = isFavorite,
             isFavoriteLoading = isFavoriteLoading,
-            selectedVideoKey = selectedVideoKey,
             imageGallery = imageGallery,
         )
     }
