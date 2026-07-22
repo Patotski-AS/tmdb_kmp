@@ -5,4 +5,5 @@ data class MediaItemModel(
     val title: String,
     val posterUrl: String?,
     val voteAverage: Double,
+    val subtitle: String? = null,
 )

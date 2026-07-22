@@ -14,7 +14,9 @@ import kotlinx.coroutines.test.setMain
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.PagedMovies
+import pas.tmdb.data.tmdb.api.model.PagedPeople
 import pas.tmdb.data.tmdb.api.model.PagedTvShows
+import pas.tmdb.data.tmdb.api.model.Person
 import pas.tmdb.data.tmdb.api.model.TvShow
 import pas.tmdb.feature.media.api.ContentType
 import pas.tmdb.feature.media.api.MediaFilters
@@ -60,6 +62,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -84,6 +87,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -119,6 +123,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = tvRepository,
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -158,6 +163,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = FakeMovieRepository(),
             tvRepository = tvRepository,
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -202,6 +208,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -245,6 +252,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -269,6 +277,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -298,6 +307,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()
@@ -309,6 +319,44 @@ class MediaStoreFactoryTest {
         assertEquals(2, state.genres.size)
         assertEquals("Драма", state.genres.first().name)
         assertEquals(1, movieRepository.genreCalls)
+    }
+
+    @Test
+    fun contentTypeSelected_loadsPopularPeople() = runTest {
+        val people = PagedPeople(
+            people = listOf(
+                Person(
+                    id = 525,
+                    name = "Christopher Nolan",
+                    profileUrl = null,
+                    knownForDepartment = "Directing",
+                ),
+            ),
+            page = 1,
+            totalPages = 1,
+            totalResults = 1,
+        )
+        val personRepository = FakePersonRepository(popularPeople = AppResult.Success(people))
+        val store = MediaStoreFactory(
+            storeFactory = DefaultStoreFactory(),
+            movieRepository = FakeMovieRepository(),
+            tvRepository = FakeTvRepository(),
+            personRepository = personRepository,
+            favoriteMoviesCache = FakeFavoriteMoviesCache(),
+            sessionRepository = FakeSessionRepository(),
+        ).create()
+
+        store.states.filter { !it.isLoading && it.items.isNotEmpty() }.first()
+
+        store.accept(MediaIntent.OnContentTypeSelected(ContentType.People))
+
+        val peopleState = store.states
+            .filter { it.contentType == ContentType.People && !it.isLoading && it.items.isNotEmpty() }
+            .first()
+
+        assertEquals("Christopher Nolan", peopleState.items.first().title)
+        assertEquals("Режиссура", peopleState.items.first().subtitle)
+        assertEquals(1, personRepository.popularCalls)
     }
 
     @Test
@@ -335,6 +383,7 @@ class MediaStoreFactoryTest {
             storeFactory = DefaultStoreFactory(),
             movieRepository = movieRepository,
             tvRepository = FakeTvRepository(),
+            personRepository = FakePersonRepository(),
             favoriteMoviesCache = FakeFavoriteMoviesCache(),
             sessionRepository = FakeSessionRepository(),
         ).create()

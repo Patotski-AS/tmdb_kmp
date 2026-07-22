@@ -236,7 +236,9 @@ private fun DetailsBody(
                             voteAverage = recommendation.voteAverage,
                         )
                     },
-                    onItemClick = { id -> onIntent(DetailsIntent.OnRecommendationClick(id)) },
+                    onItemClick = { index ->
+                        onIntent(DetailsIntent.OnRecommendationClick(model.recommendations[index].id))
+                    },
                 )
             }
         }

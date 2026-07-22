@@ -24,6 +24,7 @@ val detailsFeatureModule = module {
             onBack = params.get(),
             onNavigateToLogin = params.get(),
             onNavigateToDetails = params.get(),
+            onNavigateToPerson = params.get(),
         )
     }
 }

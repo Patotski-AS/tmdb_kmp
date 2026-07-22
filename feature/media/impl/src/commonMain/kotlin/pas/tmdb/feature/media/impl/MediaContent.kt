@@ -35,6 +35,9 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import pas.tmdb.core.ui.MediaGridLoadingState
 import pas.tmdb.core.ui.MediaPosterGrid
 import pas.tmdb.core.ui.MediaPosterItem
+import pas.tmdb.core.ui.PersonGrid
+import pas.tmdb.core.ui.PersonGridItem
+import pas.tmdb.core.ui.PersonGridLoadingState
 import pas.tmdb.core.ui.ProfileAvatar
 import pas.tmdb.core.ui.TmdbErrorState
 import pas.tmdb.core.ui.TmdbMessageState
@@ -141,7 +144,7 @@ fun MediaContent(
                         component.onIntent(MediaIntent.OnContentTypeSelected(ContentType.People))
                     },
                     icon = { Text("🎭") },
-                    label = { Text("Актёры") },
+                    label = { Text("Люди") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = MaterialTheme.colorScheme.primary,
                         selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -201,7 +204,7 @@ private fun MediaSearchField(
                 text = when (contentType) {
                     ContentType.Movies -> "Поиск фильмов"
                     ContentType.Tv -> "Поиск сериалов"
-                    ContentType.People -> "Поиск"
+                    ContentType.People -> "Поиск людей"
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -263,12 +266,21 @@ private fun MediaBody(
             modifier = modifier,
         )
 
-        ContentType.People -> {
-            TmdbMessageState(
-                message = "Скоро",
-                modifier = modifier,
-            )
-        }
+        ContentType.People -> CatalogContent(
+            searchQuery = searchQuery,
+            emptyMessage = "Люди не найдены",
+            items = items,
+            isLoading = isLoading,
+            isLoadingMore = isLoadingMore,
+            error = error,
+            endReached = endReached,
+            favoriteIds = emptySet(),
+            peopleMode = true,
+            onLoad = onLoad,
+            onLoadMore = onLoadMore,
+            onItemClick = onItemClick,
+            modifier = modifier,
+        )
     }
 }
 
@@ -286,12 +298,17 @@ private fun CatalogContent(
     onLoadMore: () -> Unit,
     onItemClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    peopleMode: Boolean = false,
 ) {
     val isSearching = searchQuery.isNotBlank()
 
     when {
         isLoading && items.isEmpty() -> {
-            MediaGridLoadingState(modifier = modifier)
+            if (peopleMode) {
+                PersonGridLoadingState(modifier = modifier)
+            } else {
+                MediaGridLoadingState(modifier = modifier)
+            }
         }
 
         error != null && items.isEmpty() -> {
@@ -316,6 +333,17 @@ private fun CatalogContent(
             )
         }
 
+        peopleMode -> {
+            PersonGrid(
+                items = items.map { it.toPersonGridItem() },
+                isLoadingMore = isLoadingMore,
+                endReached = endReached,
+                onLoadMore = onLoadMore,
+                onItemClick = onItemClick,
+                modifier = modifier,
+            )
+        }
+
         else -> {
             MediaPosterGrid(
                 items = items.map { it.toPosterItem(favoriteIds) },
@@ -336,6 +364,14 @@ private fun MediaItemModel.toPosterItem(favoriteIds: Set<Int>): MediaPosterItem 
         posterUrl = posterUrl,
         voteAverage = voteAverage,
         isFavorite = id in favoriteIds,
+    )
+
+private fun MediaItemModel.toPersonGridItem(): PersonGridItem =
+    PersonGridItem(
+        id = id,
+        name = title,
+        profileUrl = posterUrl,
+        department = subtitle,
     )
 
 private fun profileDisplayName(sessionState: SessionState): String? =
