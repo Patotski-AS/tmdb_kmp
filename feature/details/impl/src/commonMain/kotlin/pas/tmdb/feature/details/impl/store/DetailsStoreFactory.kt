@@ -11,10 +11,13 @@ import pas.tmdb.auth.api.SessionState
 import pas.tmdb.core.common.AppResult
 import pas.tmdb.data.tmdb.api.AccountRepository
 import pas.tmdb.data.tmdb.api.MovieRepository
+import pas.tmdb.data.tmdb.api.TvRepository
 import pas.tmdb.data.tmdb.api.model.CastMember
 import pas.tmdb.data.tmdb.api.model.CrewMember
 import pas.tmdb.data.tmdb.api.model.Movie
 import pas.tmdb.data.tmdb.api.model.MovieDetails
+import pas.tmdb.data.tmdb.api.model.TvShow
+import pas.tmdb.data.tmdb.api.model.TvShowDetails
 import pas.tmdb.data.tmdb.api.model.Video
 import pas.tmdb.feature.details.api.DetailsCastMember
 import pas.tmdb.feature.details.api.DetailsCrewMember
@@ -22,6 +25,7 @@ import pas.tmdb.feature.details.api.DetailsImage
 import pas.tmdb.feature.details.api.DetailsImageGallery
 import pas.tmdb.feature.details.api.DetailsImageGallerySection
 import pas.tmdb.feature.details.api.DetailsIntent
+import pas.tmdb.feature.details.api.DetailsMediaType
 import pas.tmdb.feature.details.api.DetailsModel
 import pas.tmdb.feature.details.api.DetailsRecommendation
 import pas.tmdb.feature.details.api.DetailsVideo
@@ -31,17 +35,19 @@ interface DetailsStore : Store<DetailsIntent, DetailsState, DetailsLabel>
 class DetailsStoreFactory(
     private val storeFactory: StoreFactory,
     private val movieRepository: MovieRepository,
+    private val tvRepository: TvRepository,
     private val accountRepository: AccountRepository,
     private val sessionRepository: SessionRepository,
 ) {
-    fun create(movieId: Int): DetailsStore =
+    fun create(mediaId: Int, mediaType: DetailsMediaType): DetailsStore =
         object : DetailsStore, Store<DetailsIntent, DetailsState, DetailsLabel> by storeFactory.create(
             name = "DetailsStore",
-            initialState = DetailsState(movieId = movieId),
+            initialState = DetailsState(mediaId = mediaId, mediaType = mediaType),
             bootstrapper = BootstrapperImpl(sessionRepository),
             executorFactory = {
                 ExecutorImpl(
                     movieRepository = movieRepository,
+                    tvRepository = tvRepository,
                     accountRepository = accountRepository,
                     sessionRepository = sessionRepository,
                 )
@@ -64,6 +70,7 @@ class DetailsStoreFactory(
 
     private class ExecutorImpl(
         private val movieRepository: MovieRepository,
+        private val tvRepository: TvRepository,
         private val accountRepository: AccountRepository,
         private val sessionRepository: SessionRepository,
     ) : CoroutineExecutor<DetailsIntent, Action, DetailsState, Message, DetailsLabel>() {
@@ -73,7 +80,9 @@ class DetailsStoreFactory(
                 Action.LoadInitial -> loadDetails()
                 is Action.SessionChanged -> {
                     dispatch(Message.SessionChanged(action.sessionState))
-                    if (action.sessionState is SessionState.Authenticated) {
+                    if (action.sessionState is SessionState.Authenticated &&
+                        state().mediaType == DetailsMediaType.Movie
+                    ) {
                         loadFavoriteState()
                     } else {
                         dispatch(Message.FavoriteChanged(isFavorite = null))
@@ -105,7 +114,12 @@ class DetailsStoreFactory(
                     ),
                 )
 
-                is DetailsIntent.OnRecommendationClick -> publish(DetailsLabel.NavigateToDetails(intent.movieId))
+                is DetailsIntent.OnRecommendationClick -> publish(
+                    DetailsLabel.NavigateToDetails(
+                        id = intent.id,
+                        mediaType = state().mediaType,
+                    ),
+                )
 
                 DetailsIntent.ShowFullCast -> dispatch(Message.ShowFullCastChanged(showFullCast = true))
 
@@ -123,10 +137,20 @@ class DetailsStoreFactory(
                 dispatch(Message.LoadingChanged(isLoading = true))
                 dispatch(Message.ErrorChanged(error = null))
 
-                when (val result = movieRepository.getMovieDetails(currentState.movieId)) {
+                val result = when (currentState.mediaType) {
+                    DetailsMediaType.Movie ->
+                        movieRepository.getMovieDetails(currentState.mediaId).mapSuccess { it.toModel() }
+
+                    DetailsMediaType.Tv ->
+                        tvRepository.getTvShowDetails(currentState.mediaId).mapSuccess { it.toModel() }
+                }
+
+                when (result) {
                     is AppResult.Success -> {
-                        dispatch(Message.DetailsLoaded(result.value.toModel()))
-                        if (sessionRepository.sessionState.value is SessionState.Authenticated) {
+                        dispatch(Message.DetailsLoaded(result.value))
+                        if (currentState.mediaType == DetailsMediaType.Movie &&
+                            sessionRepository.sessionState.value is SessionState.Authenticated
+                        ) {
                             loadFavoriteState()
                         }
                     }
@@ -141,9 +165,10 @@ class DetailsStoreFactory(
         }
 
         private fun loadFavoriteState() {
-            val movieId = state().movieId
+            if (state().mediaType != DetailsMediaType.Movie) return
+            val mediaId = state().mediaId
             scope.launch {
-                when (val result = accountRepository.isFavorite(movieId)) {
+                when (val result = accountRepository.isFavorite(mediaId)) {
                     is AppResult.Success -> dispatch(Message.FavoriteChanged(isFavorite = result.value))
                     is AppResult.Error -> Unit
                 }
@@ -152,6 +177,7 @@ class DetailsStoreFactory(
 
         private fun toggleFavorite() {
             val currentState = state()
+            if (currentState.mediaType != DetailsMediaType.Movie) return
             if (currentState.sessionState !is SessionState.Authenticated) {
                 publish(DetailsLabel.NavigateToLogin)
                 return
@@ -162,7 +188,7 @@ class DetailsStoreFactory(
             scope.launch {
                 dispatch(Message.FavoriteLoadingChanged(isFavoriteLoading = true))
 
-                when (val result = accountRepository.setFavorite(currentState.movieId, newFavorite)) {
+                when (val result = accountRepository.setFavorite(currentState.mediaId, newFavorite)) {
                     is AppResult.Success -> {
                         dispatch(Message.FavoriteChanged(isFavorite = newFavorite))
                     }
@@ -214,8 +240,15 @@ class DetailsStoreFactory(
     }
 }
 
+private fun <T, R> AppResult<T>.mapSuccess(transform: (T) -> R): AppResult<R> =
+    when (this) {
+        is AppResult.Success -> AppResult.Success(transform(value))
+        is AppResult.Error -> this
+    }
+
 private fun MovieDetails.toModel(): DetailsModel =
     DetailsModel(
+        mediaType = DetailsMediaType.Movie,
         title = title,
         overview = overview,
         posterUrl = posterUrl,
@@ -238,6 +271,31 @@ private fun MovieDetails.toModel(): DetailsModel =
         recommendations = recommendations.map(Movie::toRecommendation),
     )
 
+private fun TvShowDetails.toModel(): DetailsModel =
+    DetailsModel(
+        mediaType = DetailsMediaType.Tv,
+        title = name,
+        overview = overview,
+        posterUrl = posterUrl,
+        backdropUrl = backdropUrl,
+        tagline = tagline,
+        voteAverage = voteAverage,
+        releaseDate = firstAirDate,
+        runtime = episodeRuntimeMinutes,
+        genres = genres,
+        originalTitle = originalName,
+        status = status,
+        originalLanguage = originalLanguage,
+        numberOfSeasons = numberOfSeasons,
+        numberOfEpisodes = numberOfEpisodes,
+        cast = cast.map(CastMember::toModel),
+        crew = createdBy.toCreatorsCrew() + crew.toKeyCrew(),
+        videos = videos.toDisplayVideos(),
+        backdrops = backdrops.map { DetailsImage(url = it.url) },
+        posters = posters.map { DetailsImage(url = it.url) },
+        recommendations = recommendations.map(TvShow::toRecommendation),
+    )
+
 private fun CastMember.toModel(): DetailsCastMember =
     DetailsCastMember(
         id = id,
@@ -245,6 +303,13 @@ private fun CastMember.toModel(): DetailsCastMember =
         character = character,
         profileUrl = profileUrl,
     )
+
+private fun List<String>.toCreatorsCrew(): List<DetailsCrewMember> =
+    if (isEmpty()) {
+        emptyList()
+    } else {
+        listOf(DetailsCrewMember(name = joinToString(", "), jobLabel = "Создатель"))
+    }
 
 private fun List<CrewMember>.toKeyCrew(): List<DetailsCrewMember> {
     val directors = filter { it.job == "Director" }.map { it.name }.distinct()
@@ -287,6 +352,14 @@ private fun Movie.toRecommendation(): DetailsRecommendation =
     DetailsRecommendation(
         id = id,
         title = title,
+        posterUrl = posterUrl,
+        voteAverage = voteAverage,
+    )
+
+private fun TvShow.toRecommendation(): DetailsRecommendation =
+    DetailsRecommendation(
+        id = id,
+        title = name,
         posterUrl = posterUrl,
         voteAverage = voteAverage,
     )

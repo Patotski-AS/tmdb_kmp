@@ -43,6 +43,7 @@ import pas.tmdb.core.ui.YoutubeVideoOverlay
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsImageGallerySection
 import pas.tmdb.feature.details.api.DetailsIntent
+import pas.tmdb.feature.details.api.DetailsMediaType
 import pas.tmdb.feature.details.api.DetailsModel
 
 private const val CAST_PREVIEW_COUNT = 15
@@ -158,12 +159,14 @@ private fun DetailsBody(
             voteAverage = model.voteAverage,
             tagline = model.tagline,
             favoriteSlot = {
-                FavoriteAction(
-                    sessionState = model.sessionState,
-                    isFavorite = model.isFavorite,
-                    isFavoriteLoading = model.isFavoriteLoading,
-                    onToggleFavorite = { onIntent(DetailsIntent.ToggleFavorite) },
-                )
+                if (model.mediaType == DetailsMediaType.Movie) {
+                    FavoriteAction(
+                        sessionState = model.sessionState,
+                        isFavorite = model.isFavorite,
+                        isFavoriteLoading = model.isFavoriteLoading,
+                        onToggleFavorite = { onIntent(DetailsIntent.ToggleFavorite) },
+                    )
+                }
             },
         )
 
@@ -233,7 +236,7 @@ private fun DetailsBody(
                             voteAverage = recommendation.voteAverage,
                         )
                     },
-                    onItemClick = { movieId -> onIntent(DetailsIntent.OnRecommendationClick(movieId)) },
+                    onItemClick = { id -> onIntent(DetailsIntent.OnRecommendationClick(id)) },
                 )
             }
         }
@@ -256,11 +259,23 @@ private fun OverviewSection(model: DetailsModel) {
             }
             model.runtime?.takeIf { it > 0 }?.let { runtime ->
                 Text(
-                    text = formatRuntime(runtime),
+                    text = if (model.mediaType == DetailsMediaType.Tv) {
+                        "~${formatRuntime(runtime)}"
+                    } else {
+                        formatRuntime(runtime)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+
+        formatSeasonsEpisodes(model)?.let { seasonsEpisodes ->
+            Text(
+                text = seasonsEpisodes,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (model.genres.isNotEmpty()) {
@@ -340,6 +355,12 @@ private fun MetadataSection(model: DetailsModel) {
         model.status?.let { status ->
             MetadataRow(label = "Статус", value = status)
         }
+        model.numberOfSeasons?.let { seasons ->
+            MetadataRow(label = "Сезоны", value = seasons.toString())
+        }
+        model.numberOfEpisodes?.let { episodes ->
+            MetadataRow(label = "Эпизоды", value = episodes.toString())
+        }
         model.originalLanguage?.let { language ->
             MetadataRow(label = "Язык", value = language.uppercase())
         }
@@ -378,8 +399,36 @@ private fun hasMetadata(model: DetailsModel): Boolean =
     model.originalTitle != null ||
         model.status != null ||
         model.originalLanguage != null ||
+        model.numberOfSeasons != null ||
+        model.numberOfEpisodes != null ||
         model.budget != null ||
         model.revenue != null
+
+private fun formatSeasonsEpisodes(model: DetailsModel): String? {
+    val seasons = model.numberOfSeasons
+    val episodes = model.numberOfEpisodes
+    return when {
+        seasons != null && episodes != null ->
+            "${formatSeasons(seasons)} · ${formatEpisodes(episodes)}"
+        seasons != null -> formatSeasons(seasons)
+        episodes != null -> formatEpisodes(episodes)
+        else -> null
+    }
+}
+
+private fun formatSeasons(count: Int): String =
+    when {
+        count % 10 == 1 && count % 100 != 11 -> "$count сезон"
+        count % 10 in 2..4 && count % 100 !in 12..14 -> "$count сезона"
+        else -> "$count сезонов"
+    }
+
+private fun formatEpisodes(count: Int): String =
+    when {
+        count % 10 == 1 && count % 100 != 11 -> "$count эпизод"
+        count % 10 in 2..4 && count % 100 !in 12..14 -> "$count эпизода"
+        else -> "$count эпизодов"
+    }
 
 private fun formatRuntime(minutes: Int): String {
     val hours = minutes / 60

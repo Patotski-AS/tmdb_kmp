@@ -10,24 +10,20 @@ val detailsFeatureModule = module {
         DetailsStoreFactory(
             storeFactory = get(),
             movieRepository = get(),
+            tvRepository = get(),
             accountRepository = get(),
             sessionRepository = get(),
         )
     }
-    factory<DetailsComponent> { (
-        componentContext: ComponentContext,
-        movieId: Int,
-        onBack: () -> Unit,
-        onNavigateToLogin: () -> Unit,
-        onNavigateToDetails: (Int) -> Unit,
-    ) ->
+    factory<DetailsComponent> { params ->
         DefaultDetailsComponent(
-            componentContext = componentContext,
-            movieId = movieId,
+            componentContext = params.get(),
+            mediaId = params.get(),
+            mediaType = params.get(),
             storeFactory = get(),
-            onBack = onBack,
-            onNavigateToLogin = onNavigateToLogin,
-            onNavigateToDetails = onNavigateToDetails,
+            onBack = params.get(),
+            onNavigateToLogin = params.get(),
+            onNavigateToDetails = params.get(),
         )
     }
 }

@@ -82,6 +82,7 @@ fun MediaContent(
                 ) {
                     MediaSearchField(
                         query = model.searchQuery,
+                        contentType = model.contentType,
                         onQueryChange = { component.onIntent(MediaIntent.QueryChanged(it)) },
                         onClear = { component.onIntent(MediaIntent.ClearQuery) },
                         modifier = Modifier.weight(1f),
@@ -185,6 +186,7 @@ fun MediaContent(
 @Composable
 private fun MediaSearchField(
     query: String,
+    contentType: ContentType,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
@@ -196,7 +198,11 @@ private fun MediaSearchField(
         singleLine = true,
         placeholder = {
             Text(
-                text = "Поиск фильмов",
+                text = when (contentType) {
+                    ContentType.Movies -> "Поиск фильмов"
+                    ContentType.Tv -> "Поиск сериалов"
+                    ContentType.People -> "Поиск"
+                },
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
@@ -236,23 +242,28 @@ private fun MediaBody(
     modifier: Modifier = Modifier,
 ) {
     when (contentType) {
-        ContentType.Movies -> MoviesContent(
+        ContentType.Movies,
+        ContentType.Tv,
+        -> CatalogContent(
             searchQuery = searchQuery,
+            emptyMessage = if (contentType == ContentType.Tv) {
+                "Сериалы не найдены"
+            } else {
+                "Фильмы не найдены"
+            },
             items = items,
             isLoading = isLoading,
             isLoadingMore = isLoadingMore,
             error = error,
             endReached = endReached,
-            favoriteIds = favoriteIds,
+            favoriteIds = if (contentType == ContentType.Movies) favoriteIds else emptySet(),
             onLoad = onLoad,
             onLoadMore = onLoadMore,
             onItemClick = onItemClick,
             modifier = modifier,
         )
 
-        ContentType.Tv,
-        ContentType.People,
-        -> {
+        ContentType.People -> {
             TmdbMessageState(
                 message = "Скоро",
                 modifier = modifier,
@@ -262,8 +273,9 @@ private fun MediaBody(
 }
 
 @Composable
-private fun MoviesContent(
+private fun CatalogContent(
     searchQuery: String,
+    emptyMessage: String,
     items: List<MediaItemModel>,
     isLoading: Boolean,
     isLoadingMore: Boolean,
@@ -299,7 +311,7 @@ private fun MoviesContent(
 
         items.isEmpty() -> {
             TmdbMessageState(
-                message = "Фильмы не найдены",
+                message = emptyMessage,
                 modifier = modifier,
             )
         }
