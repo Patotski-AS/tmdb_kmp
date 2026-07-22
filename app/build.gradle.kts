@@ -27,6 +27,7 @@ kotlin {
 
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.decompose)
             implementation(libs.decompose.compose)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor)
@@ -34,6 +35,7 @@ kotlin {
 
         androidMain.dependencies {
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.androidx.activity.compose)
         }
 
         val desktopMain by getting {

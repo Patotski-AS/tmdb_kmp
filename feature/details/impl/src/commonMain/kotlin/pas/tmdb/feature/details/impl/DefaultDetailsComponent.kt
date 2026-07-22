@@ -10,6 +10,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import pas.tmdb.feature.details.api.DetailsComponent
 import pas.tmdb.feature.details.api.DetailsIntent
@@ -24,6 +27,7 @@ internal class DefaultDetailsComponent(
     storeFactory: DetailsStoreFactory,
     private val onBack: () -> Unit,
     private val onNavigateToLogin: () -> Unit,
+    private val onNavigateToDetails: (Int) -> Unit,
 ) : DetailsComponent, ComponentContext by componentContext {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -31,8 +35,10 @@ internal class DefaultDetailsComponent(
     private val store = storeFactory.create(movieId)
 
     private val _model = MutableValue(DetailsModel(isLoading = true))
+    private val _externalUrlEvents = MutableSharedFlow<String>(extraBufferCapacity = 1)
 
     override val model: Value<DetailsModel> = _model
+    override val externalUrlEvents: SharedFlow<String> = _externalUrlEvents.asSharedFlow()
 
     init {
         scope.launch {
@@ -45,6 +51,10 @@ internal class DefaultDetailsComponent(
                 when (label) {
                     DetailsLabel.NavigateBack -> onBack()
                     DetailsLabel.NavigateToLogin -> onNavigateToLogin()
+                    is DetailsLabel.NavigateToPerson -> {
+                        _externalUrlEvents.tryEmit("https://www.themoviedb.org/person/${label.personId}")
+                    }
+                    is DetailsLabel.NavigateToDetails -> onNavigateToDetails(label.movieId)
                     is DetailsLabel.ShowError -> Unit
                 }
             }
@@ -68,6 +78,8 @@ private fun DetailsState.toModel(): DetailsModel =
             sessionState = sessionState,
             isFavorite = isFavorite,
             isFavoriteLoading = isFavoriteLoading,
+            selectedVideoKey = selectedVideoKey,
+            imageGallery = imageGallery,
         )
     } else {
         DetailsModel(
@@ -76,5 +88,7 @@ private fun DetailsState.toModel(): DetailsModel =
             sessionState = sessionState,
             isFavorite = isFavorite,
             isFavoriteLoading = isFavoriteLoading,
+            selectedVideoKey = selectedVideoKey,
+            imageGallery = imageGallery,
         )
     }

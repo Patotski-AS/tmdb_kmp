@@ -1,6 +1,7 @@
 package pas.tmdb.feature.details.impl.store
 
 import pas.tmdb.auth.api.SessionState
+import pas.tmdb.feature.details.api.DetailsImageGallery
 import pas.tmdb.feature.details.api.DetailsModel
 
 data class DetailsState(
@@ -11,4 +12,6 @@ data class DetailsState(
     val sessionState: SessionState = SessionState.Guest,
     val isFavorite: Boolean? = null,
     val isFavoriteLoading: Boolean = false,
+    val selectedVideoKey: String? = null,
+    val imageGallery: DetailsImageGallery? = null,
 )

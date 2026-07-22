@@ -8,5 +8,9 @@ kotlin {
             implementation(projects.core.common)
             implementation(libs.coil.compose)
         }
+        androidMain.dependencies {
+            implementation(libs.androidx.browser)
+            implementation(libs.android.youtube.player)
+        }
     }
 }

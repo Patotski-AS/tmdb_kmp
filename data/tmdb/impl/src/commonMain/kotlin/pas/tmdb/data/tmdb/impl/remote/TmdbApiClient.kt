@@ -39,6 +39,7 @@ internal class TmdbApiClient(
     suspend fun getMovieDetails(movieId: Int): MovieDetailsDto =
         tmdbGet("${config.baseUrl}movie/$movieId") {
             parameter("language", LANGUAGE)
+            parameter("append_to_response", "credits,videos,images,recommendations")
         }
 
     suspend fun searchMovies(query: String, page: Int): PopularMoviesResponseDto =
